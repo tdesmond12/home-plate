@@ -577,6 +577,9 @@
   .plate-btn:focus-visible { outline: 3px solid var(--navy); outline-offset: 2px; }
   @media (prefers-reduced-motion: reduce) { .plate-btn { transition: none; } .plate-btn:hover { transform: none; } }
 
+  .grecaptcha-badge { visibility: hidden; }   /* hidden is allowed because the footer shows the reCAPTCHA notice */
+  .ver.legal { margin-top: 4px; font-size: 10.5px; letter-spacing: 0; }
+  .ver.legal a { color: inherit; }
   .ver { text-align: center; color: var(--muted); font-size: 11px; letter-spacing: .08em; opacity: .7; margin-top: 28px; }
 
   .avatar { width: 30px; height: 30px; border-radius: 50%; object-fit: cover; border: 2px solid var(--green); }
@@ -1746,6 +1749,8 @@
   };
   /* e.g. { apiKey: "...", authDomain: "xxx.firebaseapp.com", projectId: "xxx", appId: "..." } */
 
+  /* App Check (reCAPTCHA v3). Paste the reCAPTCHA *site key* here once it is created. Empty = App Check off. */
+  const APP_CHECK_SITE_KEY = '6LdPNBwuAAAAAEWAjbNrERiJNb9xoaiwnR6Kbx8I';
   const ADMIN_EMAIL = 'tdesmond12@gmail.com';   // UI hint only. The real check is in firestore.rules.
   const FB_VERSION = '12.19.0';
   let fbApp = null, fbAuth = null, fbApi = null, fbDb = null, dbApi = null, loadSeq = 0;
@@ -1969,8 +1974,15 @@
     RECIPES.splice(0, RECIPES.length); renderBook(); renderCategories();   // the database is the source of truth now
     try {
       const base = 'https://www.gstatic.com/firebasejs/' + FB_VERSION + '/';
-      const [appM, authM, dbM] = await Promise.all([import(base + 'firebase-app.js'), import(base + 'firebase-auth.js'), import(base + 'firebase-firestore.js')]);
+      const [appM, authM, dbM, acM] = await Promise.all([import(base + 'firebase-app.js'), import(base + 'firebase-auth.js'), import(base + 'firebase-firestore.js'),
+        APP_CHECK_SITE_KEY ? import(base + 'firebase-app-check.js').catch(() => null) : null]);
       const app = appM.initializeApp(FIREBASE_CONFIG);
+      if (acM) {   // must run before any other Firebase service is used
+        try { acM.initializeAppCheck(app, { provider: new acM.ReCaptchaV3Provider(APP_CHECK_SITE_KEY), isTokenAutoRefreshEnabled: true }); } catch (e) { console.error('App Check', e); }
+        const lg = document.createElement('p'); lg.className = 'ver legal';
+        lg.innerHTML = 'Protected by reCAPTCHA. Google <a href="https://policies.google.com/privacy" target="_blank" rel="noopener noreferrer">Privacy</a> and <a href="https://policies.google.com/terms" target="_blank" rel="noopener noreferrer">Terms</a> apply.';
+        const v = document.getElementById('appVer'); if (v) v.after(lg);
+      }
       fbApp = app; fbAuth = authM.getAuth(app); fbApi = authM; fbDb = dbM.getFirestore(app); dbApi = dbM;
       authM.onAuthStateChanged(fbAuth, u => { applyUser(u); loadData(u); });
       authM.getRedirectResult(fbAuth).catch(() => {});
@@ -1985,7 +1997,7 @@
   /* ===== Versioning / cache-busting =====
      Bump APP_VERSION on every upload. Running copies compare themselves to the
      live index.html (fetched with no-store) and reload once if it differs. */
-  const APP_VERSION = '2026-11-11.5';
+  const APP_VERSION = '2026-11-11.7';
   (function () {
     const label = document.getElementById('appVer');
     if (label) label.textContent = 'Home Plate v' + APP_VERSION;
