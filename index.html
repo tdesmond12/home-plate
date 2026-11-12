@@ -585,6 +585,13 @@
   #acctAction { margin-top: 14px; }
   #acctAction .btn-primary { width: auto; }
   .menu button[hidden] { display: none; }
+
+  #toast { position: fixed; left: 50%; bottom: calc(var(--nav-h) + 16px); transform: translate(-50%, 16px); background: var(--navy); color: #fff; padding: 10px 16px;
+    border-radius: 12px; font-size: 14px; opacity: 0; pointer-events: none; transition: opacity .2s, transform .2s; z-index: 50; max-width: 90vw; text-align: center; }
+  #toast.show { opacity: 1; transform: translate(-50%, 0); }
+  @media (min-width: 900px) { #toast { bottom: 24px; } }
+  #acctAction { display: flex; gap: 10px; flex-wrap: wrap; }
+  .diff-pick button:disabled { cursor: default; }
 </style>
 </head>
 <body>
@@ -850,7 +857,10 @@
   let dragging = false;
 
   function loadCustom() { try { return JSON.parse(localStorage.getItem('hp_custom_categories') || '[]'); } catch (e) { return []; } }
-  function saveCustom(a) { try { localStorage.setItem('hp_custom_categories', JSON.stringify(a)); } catch (e) {} }
+  function saveCustom(a) {
+    if (typeof dbUserReady === 'function' && dbUserReady()) { dbSaveUser({ customCategories: a }); return; }
+    try { localStorage.setItem('hp_custom_categories', JSON.stringify(a)); } catch (e) {}
+  }
   let customCats = loadCustom();
 
   function allCats() {
@@ -957,7 +967,7 @@
   /* ================= Recipes ================= */
   /* Signed-in user. Replace with Firebase Auth's currentUser (uid + displayName) once auth is wired. */
   let CURRENT_USER = { uid: 'demo-user', displayName: 'Guest Chef' };   // replaced by the signed-in Google user in the auth script
-  const RECIPES = [{
+  const SEED_RECIPES = [{
     id: "chicken-pot-pie",
     title: "Classic Chicken Pot Pie",
     blurb: "Flaky golden crust over a creamy chicken and vegetable filling.",
@@ -990,12 +1000,11 @@
       "Rest for 10 minutes before slicing so the filling sets."
     ]
   }];
+  /* Live list. Starts as a copy of the starter recipe; with Firebase on, it is replaced by what Firestore returns. */
+  const RECIPES = JSON.parse(JSON.stringify(SEED_RECIPES));
 
-  function loadRC() { try { return JSON.parse(localStorage.getItem('hp_recipe_cats') || '{}'); } catch (e) { return {}; } }
-  let recipeCatsStore = loadRC();
-  function saveRC() { try { localStorage.setItem('hp_recipe_cats', JSON.stringify(recipeCatsStore)); } catch (e) {} }
   const cmp = (a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' });
-  const catsFor = r => (recipeCatsStore[r.id] || r.categories).slice().sort(cmp);
+  const catsFor = r => (r.categories || []).slice().sort(cmp);
   function recipeCount(name) { return RECIPES.filter(r => catsFor(r).includes(name)).length; }
   const fmtMin = n => n < 60 ? n + ' min' : Math.floor(n / 60) + ' hr' + (n % 60 ? ' ' + (n % 60) + ' min' : '');
   function el(tag, cls, text) { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
@@ -1100,7 +1109,8 @@
     b.appendChild(svgUse(icon)); h.appendChild(b); h.appendChild(document.createTextNode(title)); c.appendChild(h); return c;
   }
   function setCats(r, list) {
-    recipeCatsStore[r.id] = list; saveRC();
+    if (!isOwner(r)) return;
+    r.categories = list; dbSaveRecipe(r, { categories: list });
     renderRecipe(); renderCategories(); renderBook();
   }
   function renderRecipe() {
@@ -1113,7 +1123,7 @@
     body.appendChild(statsBack(r));
 
     // categories
-    const cats = catsFor(r);
+    const cats = catsFor(r); const canEdit = isOwner(r);
     const cc = cardEl('i-tag', 'Categories', false);
     if (!cats.length) cc.appendChild(el('p', 'none', 'Not in any category yet.'));
     const chips = el('div', 'chips');
@@ -1122,7 +1132,7 @@
       const nb = el('button', 'chip-name', name); nb.type = 'button'; nb.addEventListener('click', () => openCategory(name));
       const xb = el('button', 'chip-x'); xb.type = 'button'; xb.setAttribute('aria-label', 'Remove from ' + name); xb.appendChild(svgUse('i-x'));
       xb.addEventListener('click', () => setCats(r, cats.filter(c => c !== name)));
-      chip.appendChild(nb); chip.appendChild(xb); chips.appendChild(chip);
+      chip.appendChild(nb); if (canEdit) chip.appendChild(xb); chips.appendChild(chip);
     });
     cc.appendChild(chips);
     const add = el('div', 'addcat');
@@ -1132,7 +1142,7 @@
     const ab = el('button', 'btn-primary sm', 'Add'); ab.type = 'button';
     ab.addEventListener('click', () => { if (sel.value) setCats(r, cats.concat(sel.value)); });
     sel.addEventListener('change', () => { if (sel.value) setCats(r, cats.concat(sel.value)); });
-    add.appendChild(sel); add.appendChild(ab); cc.appendChild(add);
+    add.appendChild(sel); add.appendChild(ab); if (canEdit) cc.appendChild(add);
     body.appendChild(cc);
     body.appendChild(toolCard(r));
 
@@ -1179,14 +1189,16 @@
   const toolById = id => TOOLS.find(x => x.id === id);
   const readLS = (k, d) => { try { return JSON.parse(localStorage.getItem(k) || d); } catch (e) { return JSON.parse(d); } };
   const writeLS = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} };
-  let kitchenTools = readLS('hp_kitchen_tools', '[]');
-  let recipeToolStore = readLS('hp_recipe_tool', '{}');
-  const toolFor = r => (r.id in recipeToolStore) ? recipeToolStore[r.id] : (r.tool || '');
+  let kitchenTools = readLS('hp_kitchen_tools', '[]');   // signed in: replaced by users/{uid}.kitchenTools
+  function saveKitchen() {
+    if (typeof dbUserReady === 'function' && dbUserReady()) dbSaveUser({ kitchenTools });
+    else writeLS('hp_kitchen_tools', kitchenTools);
+  }
+  const toolFor = r => r.tool || '';
   const haveCount = () => kitchenTools.filter(id => toolById(id)).length;
 
   const DIFF_LABELS = ['Not rated', 'T-Ball', 'Little League', 'Minor League', 'Major League', 'Hall of Fame'];
-  let recipeDiffStore = readLS('hp_recipe_difficulty', '{}');
-  const diffFor = r => { const v = (r.id in recipeDiffStore) ? recipeDiffStore[r.id] : (r.difficulty || 0); return Math.max(0, Math.min(5, Math.round(+v) || 0)); };
+  const diffFor = r => { const v = (r.difficulty || 0); return Math.max(0, Math.min(5, Math.round(+v) || 0)); };
   function ballsEl(n, cls) {
     const s = el('span', cls); s.setAttribute('role', 'img'); s.setAttribute('aria-label', n ? 'Difficulty ' + n + ' of 5: ' + DIFF_LABELS[n] : 'Difficulty not rated');
     for (let i = 1; i <= 5; i++) { const b = svgUse('i-ball'); b.classList.add('ball'); if (i <= n) b.classList.add('on'); s.appendChild(b); }
@@ -1198,12 +1210,12 @@
     wrap.appendChild(el('b', null, 'Difficulty'));
     const row = el('div', 'diff-pick'); row.setAttribute('role', 'radiogroup'); row.setAttribute('aria-label', 'Difficulty, 1 to 5');
     for (let i = 1; i <= 5; i++) {
-      const btn = el('button'); btn.type = 'button'; btn.dataset.d = i; btn.setAttribute('role', 'radio'); btn.setAttribute('aria-checked', i === n);
+      const btn = el('button'); btn.type = 'button'; btn.dataset.d = i; btn.disabled = !isOwner(r); btn.setAttribute('role', 'radio'); btn.setAttribute('aria-checked', i === n);
       btn.setAttribute('aria-label', i + ' of 5, ' + DIFF_LABELS[i]);
       if (i <= n) btn.classList.add('on');
       const ball = svgUse('i-ball'); ball.classList.add('ball'); if (i <= n) ball.classList.add('on'); btn.appendChild(ball);
       btn.addEventListener('click', () => {
-        recipeDiffStore[r.id] = i; writeLS('hp_recipe_difficulty', recipeDiffStore);
+        if (!isOwner(r)) return; r.difficulty = i; dbSaveRecipe(r, { difficulty: i });
         renderRecipe(); renderBook();
         const nb = document.querySelector('#recipeBody .diff-pick button[data-d="' + i + '"]'); if (nb) nb.focus({ preventScroll: true });
       });
@@ -1220,17 +1232,15 @@
        allow update, delete: if request.auth.uid == resource.data.ownerId;  */
   const isOwner = r => !!CURRENT_USER && r.ownerId === CURRENT_USER.uid;
   const ownerNameFor = r => r.ownerName || 'Unknown chef';   // later: users/{r.ownerId}.displayName
-  let recipeVisStore = readLS('hp_recipe_visibility', '{}');
-  const visFor = r => ((r.id in recipeVisStore) ? recipeVisStore[r.id] : r.visibility) === 'public' ? 'public' : 'private';
+  const visFor = r => r.visibility === 'public' ? 'public' : 'private';
   function setVisibility(r, v) {
     if (!isOwner(r) || (v !== 'public' && v !== 'private')) return;
-    recipeVisStore[r.id] = v; writeLS('hp_recipe_visibility', recipeVisStore);     // later: updateDoc(recipeRef, { visibility: v })
+    r.visibility = v; dbSaveRecipe(r, { visibility: v });
   }
-  readLS('hp_deleted_recipes', '[]').forEach(id => { const i = RECIPES.findIndex(r => r.id === id); if (i > -1) RECIPES.splice(i, 1); });
   function deleteRecipe(r) {
     if (!isOwner(r)) return;
-    const i = RECIPES.indexOf(r); if (i > -1) RECIPES.splice(i, 1);                 // later: deleteDoc(recipeRef)
-    const gone = readLS('hp_deleted_recipes', '[]'); if (!gone.includes(r.id)) gone.push(r.id); writeLS('hp_deleted_recipes', gone);
+    const i = RECIPES.indexOf(r); if (i > -1) RECIPES.splice(i, 1);
+    dbDeleteRecipe(r);
     currentRecipe = null; renderBook(); renderCategories(); showView('book'); window.scrollTo(0, 0);
   }
   function recipeFooter(r) {
@@ -1298,7 +1308,7 @@
         b.appendChild(el('span', 'tt-box')); b.appendChild(el('span', null, x.name)); sync();
         b.addEventListener('click', () => {
           kitchenTools = kitchenTools.includes(x.id) ? kitchenTools.filter(i => i !== x.id) : kitchenTools.concat(x.id);
-          writeLS('hp_kitchen_tools', kitchenTools); sync(); updateCount();
+          saveKitchen(); sync(); updateCount();
         });
         grid.appendChild(b);
       });
@@ -1321,7 +1331,8 @@
       sel.appendChild(og);
     });
     sel.value = toolById(cur) ? cur : '';
-    sel.addEventListener('change', () => { recipeToolStore[r.id] = sel.value; writeLS('hp_recipe_tool', recipeToolStore); renderRecipe(); });
+    sel.disabled = !isOwner(r);
+    sel.addEventListener('change', () => { if (!isOwner(r)) return; r.tool = sel.value; dbSaveRecipe(r, { tool: sel.value }); renderRecipe(); });
     wrap.appendChild(sel); c.appendChild(wrap);
     const tl = toolById(cur);
     if (tl) {
@@ -1331,7 +1342,7 @@
       else {
         hint.appendChild(el('span', null, 'Not in your kitchen yet'));
         const add = el('button', null, 'Add to My Kitchen'); add.type = 'button';
-        add.addEventListener('click', () => { kitchenTools = kitchenTools.concat(tl.id); writeLS('hp_kitchen_tools', kitchenTools); renderKitchen(); renderRecipe(); });
+        add.addEventListener('click', () => { kitchenTools = kitchenTools.concat(tl.id); saveKitchen(); renderKitchen(); renderRecipe(); });
         hint.appendChild(add);
       }
       c.appendChild(hint);
@@ -1364,14 +1375,23 @@
   };
   /* e.g. { apiKey: "...", authDomain: "xxx.firebaseapp.com", projectId: "xxx", appId: "..." } */
 
+  const ADMIN_EMAIL = 'tdesmond12@gmail.com';   // UI hint only. The real check is in firestore.rules.
   const FB_VERSION = '10.14.1';
-  let fbAuth = null, fbApi = null;
+  let fbAuth = null, fbApi = null, fbDb = null, dbApi = null, loadSeq = 0;
+  /* Pristine copies of the built-in lists, used to seed the database. */
+  const BUILTIN_CATEGORIES = DEFAULT_CATEGORIES.slice();
+  const BUILTIN_TOOLS = TOOLS.map(x => Object.assign({}, x));
   const $ = id => document.getElementById(id);
 
+  function toast(msg) {
+    let tt = document.getElementById('toast');
+    if (!tt) { tt = document.createElement('div'); tt.id = 'toast'; tt.setAttribute('role', 'status'); document.body.appendChild(tt); }
+    tt.textContent = msg; tt.classList.add('show'); clearTimeout(tt._h); tt._h = setTimeout(() => tt.classList.remove('show'), 4500);
+  }
   function acctMsg(text) { $('acctMsg').textContent = text || ''; }
 
   function applyUser(u) {
-    if (u) CURRENT_USER = { uid: u.uid, displayName: u.displayName || 'Chef', photoURL: u.photoURL || '', email: u.email || '' };
+    if (u) CURRENT_USER = { uid: u.uid, displayName: u.displayName || 'Chef', photoURL: u.photoURL || '', email: u.email || '', emailVerified: !!u.emailVerified };
     else CURRENT_USER = FIREBASE_CONFIG ? { uid: null, displayName: 'Guest' } : { uid: 'demo-user', displayName: 'Guest Chef' };
 
     // header button
@@ -1394,6 +1414,10 @@
       info.appendChild(n); info.appendChild(e);
       const b = document.createElement('button'); b.type = 'button'; b.className = 'btn-primary'; b.textContent = 'Sign out';
       b.addEventListener('click', doSignOut); act.appendChild(b);
+      if (fbDb && CURRENT_USER.emailVerified && CURRENT_USER.email.toLowerCase() === ADMIN_EMAIL) {
+        const s = document.createElement('button'); s.type = 'button'; s.className = 'btn-ghost'; s.textContent = 'Load starter data';
+        s.addEventListener('click', seedDatabase); act.appendChild(s);
+      }
     } else {
       info.textContent = 'Sign in to save your own recipes, categories and kitchen.';
       const b = document.createElement('button'); b.type = 'button'; b.className = 'btn-primary'; b.textContent = 'Sign in with Google';
@@ -1422,16 +1446,101 @@
 
   $('authMenuBtn').addEventListener('click', () => { menu.classList.remove('open'); CURRENT_USER && CURRENT_USER.uid ? doSignOut() : doSignIn(); });
 
+
+  /* ===== Firestore data layer =====
+     categories/{slug}  {name}                          read: anyone   write: admin
+     tools/{id}         {name, group, order}            read: anyone   write: admin
+     recipes/{id}       {title, ..., ownerId, ownerName, visibility}   read: public or owner   write: owner
+     users/{uid}        {displayName, kitchenTools[], customCategories[]}   read/write: that user only */
+  const dbUserReady = () => !!(fbDb && CURRENT_USER && CURRENT_USER.uid);
+  async function dbSaveUser(fields) {
+    if (!dbUserReady()) return;
+    try { await dbApi.setDoc(dbApi.doc(fbDb, 'users', CURRENT_USER.uid), fields, { merge: true }); }
+    catch (e) { console.error(e); toast('Could not save that change.'); }
+  }
+  async function dbSaveRecipe(r, fields) {
+    if (!dbUserReady()) return;
+    try { await dbApi.updateDoc(dbApi.doc(fbDb, 'recipes', r.id), fields); }
+    catch (e) { console.error(e); toast('Could not save that change.'); }
+  }
+  async function dbDeleteRecipe(r) {
+    if (!dbUserReady()) return;
+    try { await dbApi.deleteDoc(dbApi.doc(fbDb, 'recipes', r.id)); }
+    catch (e) { console.error(e); toast('Could not delete that recipe.'); }
+  }
+  const slugOf = s => s.toLowerCase().replace(/&/g, 'and').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+
+  async function loadData(u) {
+    if (!fbDb) return;
+    const seq = ++loadSeq, A = dbApi;
+    try {
+      const [cs, ts] = await Promise.all([A.getDocs(A.collection(fbDb, 'categories')), A.getDocs(A.collection(fbDb, 'tools'))]);
+      if (seq !== loadSeq) return;
+      if (!cs.empty) { const names = cs.docs.map(d => d.data().name).filter(Boolean).sort(cmp); DEFAULT_CATEGORIES.splice(0, DEFAULT_CATEGORIES.length, ...names); }
+      if (!ts.empty) { const list = ts.docs.map(d => Object.assign({ id: d.id }, d.data())).sort((a, b) => (a.order || 0) - (b.order || 0)); TOOLS.splice(0, TOOLS.length, ...list); }
+    } catch (e) { console.error(e); toast('Could not load categories and tools.'); }
+    try {
+      const col = A.collection(fbDb, 'recipes');
+      const jobs = [A.getDocs(A.query(col, A.where('visibility', '==', 'public')))];
+      if (u) jobs.push(A.getDocs(A.query(col, A.where('ownerId', '==', u.uid))));
+      const snaps = await Promise.all(jobs);
+      if (seq !== loadSeq) return;
+      const map = new Map();
+      snaps.forEach(s => s.forEach(d => map.set(d.id, Object.assign({ id: d.id }, d.data()))));
+      const list = [...map.values()].sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0) || String(a.title).localeCompare(String(b.title)));
+      RECIPES.splice(0, RECIPES.length, ...list);
+    } catch (e) { console.error(e); toast('Could not load recipes.'); }
+    try {
+      if (u) {
+        const us = await A.getDoc(A.doc(fbDb, 'users', u.uid));
+        if (seq !== loadSeq) return;
+        const d = us.exists() ? us.data() : {};
+        kitchenTools = Array.isArray(d.kitchenTools) ? d.kitchenTools : [];
+        customCats = Array.isArray(d.customCategories) ? d.customCategories : [];
+        if (!us.exists()) A.setDoc(A.doc(fbDb, 'users', u.uid), { displayName: u.displayName || '', createdAt: Date.now() }, { merge: true }).catch(() => {});
+      } else {
+        kitchenTools = readLS('hp_kitchen_tools', '[]'); customCats = loadCustom();
+      }
+    } catch (e) { console.error(e); }
+    if (currentRecipe && !RECIPES.some(r => r.id === currentRecipe)) { currentRecipe = null; if (document.getElementById('recipe').classList.contains('active')) showView('book'); }
+    renderCategories(); renderBook(); renderKitchen(); if (currentRecipe) renderRecipe();
+  }
+
+  /* Admin only (rules enforce it): loads categories, tools and the starter recipe. Safe to run twice. */
+  async function seedDatabase() {
+    if (!dbUserReady()) return;
+    const A = dbApi; acctMsg('');
+    try {
+      const batch = A.writeBatch(fbDb);
+      BUILTIN_CATEGORIES.forEach(n => batch.set(A.doc(fbDb, 'categories', slugOf(n)), { name: n }));
+      BUILTIN_TOOLS.forEach((x, i) => batch.set(A.doc(fbDb, 'tools', x.id), { name: x.name, group: x.group, order: i }));
+      await batch.commit();
+      let added = 0;
+      for (const s of SEED_RECIPES) {
+        if (RECIPES.some(r => r.id === s.id)) continue;                       // already there: leave your edits alone
+        const rec = Object.assign({}, JSON.parse(JSON.stringify(s)), { ownerId: CURRENT_USER.uid, ownerName: CURRENT_USER.displayName, visibility: 'private', createdAt: Date.now() });
+        await A.setDoc(A.doc(fbDb, 'recipes', s.id), rec); added++;
+      }
+      toast('Starter data loaded. ' + added + ' recipe' + (added === 1 ? '' : 's') + ' added.');
+      await loadData({ uid: CURRENT_USER.uid, displayName: CURRENT_USER.displayName });
+    } catch (e) { console.error(e); acctMsg('Could not load starter data (' + (e.code || 'error') + ').'); }
+  }
+
   async function initAuth() {
     applyUser(null);                       // start signed out, then Firebase reports the real state
     if (!FIREBASE_CONFIG) return;
+    RECIPES.splice(0, RECIPES.length); renderBook(); renderCategories();   // the database is the source of truth now
     try {
       const base = 'https://www.gstatic.com/firebasejs/' + FB_VERSION + '/';
-      const [appM, authM] = await Promise.all([import(base + 'firebase-app.js'), import(base + 'firebase-auth.js')]);
-      fbAuth = authM.getAuth(appM.initializeApp(FIREBASE_CONFIG)); fbApi = authM;
-      authM.onAuthStateChanged(fbAuth, applyUser);
+      const [appM, authM, dbM] = await Promise.all([import(base + 'firebase-app.js'), import(base + 'firebase-auth.js'), import(base + 'firebase-firestore.js')]);
+      const app = appM.initializeApp(FIREBASE_CONFIG);
+      fbAuth = authM.getAuth(app); fbApi = authM; fbDb = dbM.getFirestore(app); dbApi = dbM;
+      authM.onAuthStateChanged(fbAuth, u => { applyUser(u); loadData(u); });
       authM.getRedirectResult(fbAuth).catch(() => {});
-    } catch (e) { acctMsg('Sign-in could not load. Check your connection and reload.'); }
+    } catch (e) {
+      acctMsg('Sign-in could not load. Check your connection and reload.');
+      if (!RECIPES.length) { RECIPES.push(...JSON.parse(JSON.stringify(SEED_RECIPES))); renderBook(); renderCategories(); }   // offline fallback: starter recipe
+    }
   }
   initAuth();
 </script>
@@ -1439,7 +1548,7 @@
   /* ===== Versioning / cache-busting =====
      Bump APP_VERSION on every upload. Running copies compare themselves to the
      live index.html (fetched with no-store) and reload once if it differs. */
-  const APP_VERSION = '2026-11-11.3';
+  const APP_VERSION = '2026-11-11.4';
   (function () {
     const label = document.getElementById('appVer');
     if (label) label.textContent = 'Home Plate v' + APP_VERSION;
