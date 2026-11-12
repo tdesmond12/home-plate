@@ -1499,21 +1499,23 @@
     let bmp;
     try { bmp = await createImageBitmap(file); }
     catch (e) { bmp = await new Promise((res, rej) => { const i = new Image(), u = URL.createObjectURL(file); i.onload = () => { URL.revokeObjectURL(u); res(i); }; i.onerror = rej; i.src = u; }); }
-    const w0 = bmp.width, h0 = bmp.height, k = Math.min(1, 1600 / Math.max(w0, h0));
+    const w0 = bmp.width, h0 = bmp.height, k = Math.min(1, 1280 / Math.max(w0, h0));
     const cv = document.createElement('canvas'); cv.width = Math.max(1, Math.round(w0 * k)); cv.height = Math.max(1, Math.round(h0 * k));
     cv.getContext('2d').drawImage(bmp, 0, 0, cv.width, cv.height);
-    const data = cv.toDataURL('image/jpeg', 0.82);
+    const data = cv.toDataURL('image/jpeg', 0.8);
     return { mime: 'image/jpeg', b64: data.split(',')[1], preview: data };
   }
   function importErrorText(e) {
     const code = String((e && e.code) || ''), msg = String((e && e.message) || e || '');
     const all = code + ' ' + msg;
     let nice;
+    if (/timeout/.test(code)) return 'Gemini took longer than 90 seconds, so I stopped waiting. Try again, or try photos or typing it in.';
     if (/not_a_recipe/.test(all)) return "That doesn't look like a recipe Gemini can read. Try photos instead, or type it in.";
     if (/ai-lib-load/.test(all)) nice = "The Gemini library didn't load.";
     else if (/no-json|JSON/i.test(all)) nice = "Gemini's answer wasn't readable. Please try again.";
     else if (/api-not-enabled|has not been used|not been enabled|SERVICE_DISABLED|API_KEY_SERVICE_BLOCKED|\[403/i.test(all)) nice = "Gemini isn't allowed for this project yet. In Firebase, check Build > AI Logic is enabled with the Gemini Developer API.";
     else if (/\[404|not found|NOT_FOUND/i.test(all)) nice = "Gemini didn't recognize the model name. It may have been renamed.";
+    else if (/\[(500|502|503|504)\b|high demand|overloaded|UNAVAILABLE/i.test(all)) nice = 'Gemini is overloaded right now (this is on Google\'s side, not your setup). Wait a minute and try again.';
     else if (/quota|\[429|RESOURCE_EXHAUSTED/i.test(all)) nice = 'Gemini is busy or out of free requests right now. Try again in a minute.';
     else if (/app.?check|appcheck/i.test(all)) nice = 'App Check blocked the request.';
     else if (/Failed to fetch|NetworkError|Load failed|offline/i.test(all)) nice = "Couldn't reach Gemini. Check your connection and try again.";
@@ -1698,13 +1700,18 @@
         if (!S.photos.length) { setStatus('Add at least one photo first.', true); return; }
         req = { mode: 'photos', photos: S.photos };
       }
-      setBusy(true); setStatus(req.mode === 'link' ? 'Reading the page…' : 'Reading your photos…', false, true);
+      setBusy(true);
+      const t0 = Date.now(); let label = req.mode === 'link' ? 'Reading the page' : 'Reading your photos';
+      const secs = () => Math.round((Date.now() - t0) / 1000);
+      const tick = () => setStatus(label + '\u2026 ' + secs() + 's', false, true);
+      tick(); const timer = setInterval(tick, 1000);
       try {
-        const data = await geminiExtract(req, { categories: allCats().map(c => c.name), tools: TOOLS });
-        applyImported(data, req); setStatus('Done. Check everything below, fix anything that is off, and confirm the credit before saving.', false);
+        const data = await geminiExtract(req, { categories: allCats().map(c => c.name), tools: TOOLS, onRetry: () => { label = 'Gemini is busy. Trying again'; } });
+        clearInterval(timer);
+        applyImported(data, req); setStatus('Done in ' + secs() + 's. Check everything below, fix anything that is off, and confirm the credit before saving.', false);
         F.title.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      } catch (e) { console.error(e); setStatus(importErrorText(e), true); }
-      finally { setBusy(false); }
+      } catch (e) { clearInterval(timer); console.error(e); setStatus(importErrorText(e) + ' (after ' + secs() + 's)', true); }
+      finally { clearInterval(timer); setBusy(false); }
     }
     linkBtn.addEventListener('click', runImport); photoBtn.addEventListener('click', runImport);
     F.link.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); runImport(); } });
@@ -1835,20 +1842,50 @@
      If Google retires this model name, change GEMINI_MODEL. */
   const GEMINI_MODEL = 'gemini-3.5-flash';
   let aiMod = null; const aiModels = {};
-  async function geminiModel(useUrl) {
+  let useThinkingCfg = true;           // switched off automatically if Google rejects the setting
+  const GEMINI_TIMEOUT_MS = 90000;
+  const GEMINI_FALLBACK = 'gemini-3.5-flash-lite';   // tried if the main model keeps saying "high demand"
+  async function geminiModel(useUrl, name) {
     if (!fbApp) throw new Error('Sign-in is still loading');
     if (!aiMod) {
       try { aiMod = await import('https://www.gstatic.com/firebasejs/' + FB_VERSION + '/firebase-ai.js'); }
       catch (e) { throw Object.assign(new Error('Could not load the Gemini library: ' + (e && e.message || e)), { code: 'ai-lib-load' }); }
     }
-    const k = useUrl ? 'url' : 'img';
+    const k = (useUrl ? 'url:' : 'img:') + name + (useThinkingCfg ? ':t' : '');
     if (!aiModels[k]) {
       const ai = aiMod.getAI(fbApp, { backend: new aiMod.GoogleAIBackend() });
-      const cfg = { model: GEMINI_MODEL };
-      if (useUrl) cfg.tools = [{ urlContext: {} }]; else cfg.generationConfig = { responseMimeType: 'application/json' };
+      const cfg = { model: name };
+      const gen = {};
+      if (!useUrl) gen.responseMimeType = 'application/json';
+      if (useThinkingCfg && name === GEMINI_MODEL) gen.thinkingConfig = { thinkingLevel: (aiMod.ThinkingLevel && aiMod.ThinkingLevel.LOW) || 'LOW' };   // less 'thinking' = faster
+      if (Object.keys(gen).length) cfg.generationConfig = gen;
+      if (useUrl) cfg.tools = [{ urlContext: {} }];
       aiModels[k] = aiMod.getGenerativeModel(ai, cfg);
     }
     return aiModels[k];
+  }
+  /* Google sometimes answers 500/503 "high demand". Retry a few times, then try the lighter model. */
+  const sleep = ms => new Promise(r => setTimeout(r, ms));
+  const isBusy = e => /\[(500|502|503|504|429)\b|high demand|overloaded|UNAVAILABLE|RESOURCE_EXHAUSTED/i.test(String((e && e.message) || ''));
+  async function generateText(useUrl, input, onRetry) {
+    let firstErr = null;
+    for (const name of [GEMINI_MODEL, GEMINI_FALLBACK]) {
+      for (let attempt = 0; attempt < 3; attempt++) {
+        try {
+          const m = await geminiModel(useUrl, name);
+          let to; const timeout = new Promise((_, rej) => { to = setTimeout(() => rej(Object.assign(new Error('timeout'), { code: 'timeout' })), GEMINI_TIMEOUT_MS); });
+          try { return (await Promise.race([m.generateContent(input), timeout])).response.text(); } finally { clearTimeout(to); }
+        }
+        catch (e) {
+          if (useThinkingCfg && /\[400\b/.test(String(e && e.message)) && /think/i.test(String(e && e.message))) { useThinkingCfg = false; attempt--; continue; }
+          if (!firstErr) firstErr = e;
+          if (!isBusy(e)) throw (name === GEMINI_MODEL ? e : firstErr);   // a real problem: stop and report it
+          if (onRetry) onRetry();
+          await sleep(1500 * (attempt + 1));
+        }
+      }
+    }
+    throw firstErr;
   }
   function parseJsonLoose(text) {
     const s = String(text || '');
@@ -1867,9 +1904,9 @@
       '{"title": string, "description": string, "prepMinutes": number, "cookMinutes": number, "servings": number, "ingredients": [string], "steps": [string], "suggestedCategories": [string], "suggestedTool": string, "creatorName": string, "sourceName": string, "sourceUrl": string}\n' +
       'Rules:\n' +
       '- Use only what the source shows. Do not invent ingredients, amounts, times or steps. Keep amounts exactly as written.\n' +
+      '- description: one or two plain sentences about the dish, in your own words.\n' +
       '- ingredients: one string per ingredient line. steps: one string per step, without step numbers.\n' +
       '- Leave out life stories, ads, comments, reviews and nutrition facts.\n' +
-      '- description: one or two plain sentences about the dish, in your own words.\n' +
       '- suggestedCategories: up to 5, chosen ONLY from this list: ' + catList + '\n' +
       '- suggestedTool: the single best id from this list, or "": ' + toolList + '\n' +
       '- creatorName: the person credited as the author of the recipe (blog author, cookbook author, chef). "" if not shown.\n' +
@@ -1879,15 +1916,11 @@
       '- If the source is not a recipe, return {"error":"not_a_recipe"}.';
     let text;
     if (req.mode === 'link') {
-      const m = await geminiModel(true);
-      const res = await m.generateContent('Read the recipe on this web page and extract it.\n' + req.url + '\n\n' + rules);
-      text = res.response.text();
+      text = await generateText(true, 'Read the recipe on this web page and extract it.\n' + req.url + '\n\n' + rules, ctx.onRetry);
     } else {
-      const m = await geminiModel(false);
       const parts = ['These photos show one recipe (possibly several pages). Read them and extract the recipe.\n\n' + rules]
         .concat(req.photos.map(p => ({ inlineData: { mimeType: p.mime, data: p.b64 } })));
-      const res = await m.generateContent(parts);
-      text = res.response.text();
+      text = await generateText(false, parts, ctx.onRetry);
     }
     const d = parseJsonLoose(text);
     if (d.error) throw new Error('not_a_recipe');
@@ -2006,7 +2039,7 @@
   /* ===== Versioning / cache-busting =====
      Bump APP_VERSION on every upload. Running copies compare themselves to the
      live index.html (fetched with no-store) and reload once if it differs. */
-  const APP_VERSION = '2026-11-12.4';
+  const APP_VERSION = '2026-11-12.8';
   (function () {
     const label = document.getElementById('appVer');
     if (label) label.textContent = 'Home Plate v' + APP_VERSION;
