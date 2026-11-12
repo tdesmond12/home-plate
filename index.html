@@ -578,6 +578,13 @@
   @media (prefers-reduced-motion: reduce) { .plate-btn { transition: none; } .plate-btn:hover { transform: none; } }
 
   .ver { text-align: center; color: var(--muted); font-size: 11px; letter-spacing: .08em; opacity: .7; margin-top: 28px; }
+
+  .avatar { width: 30px; height: 30px; border-radius: 50%; object-fit: cover; border: 2px solid var(--green); }
+  .acct-msg { color: var(--red); font-size: 13px; margin-top: 8px; min-height: 0; }
+  .acct-msg:empty { display: none; }
+  #acctAction { margin-top: 14px; }
+  #acctAction .btn-primary { width: auto; }
+  .menu button[hidden] { display: none; }
 </style>
 </head>
 <body>
@@ -618,8 +625,9 @@
           <span>Home Plate</span>
         </button>
         <button class="profile-btn" id="profileBtn" aria-label="Profile">
-          <svg viewBox="0 0 32 32"><circle cx="16" cy="16" r="14"/><circle cx="16" cy="13" r="4.5"/><path d="M7 26c2-5 6-6.5 9-6.5s7 1.5 9 6.5"/></svg>
-          <span>Profile</span>
+          <svg viewBox="0 0 32 32" id="profileIcon"><circle cx="16" cy="16" r="14"/><circle cx="16" cy="13" r="4.5"/><path d="M7 26c2-5 6-6.5 9-6.5s7 1.5 9 6.5"/></svg>
+          <img class="avatar" id="profileAvatar" alt="" hidden referrerpolicy="no-referrer">
+          <span id="profileLabel">Profile</span>
         </button>
         <div class="menu" id="profileMenu" role="menu">
           <button role="menuitem" data-go="profile"><svg class="ico"><use href="#i-user"/></svg>My Profile</button>
@@ -627,6 +635,7 @@
           <button role="menuitem" data-go="kitchen"><svg class="ico"><use href="#i-pot"/></svg>My Kitchen</button>
           <button role="menuitem" data-go="myrecipes"><svg class="ico"><use href="#i-whisk"/></svg>My Recipes</button>
           <button role="menuitem" data-go="categories"><svg class="ico"><use href="#i-tag"/></svg>My Categories</button>
+          <button role="menuitem" id="authMenuBtn" data-act="auth" hidden><svg class="ico"><use href="#i-user"/></svg><span id="authMenuLabel">Sign in with Google</span></button>
         </div>
       </div>
 
@@ -748,7 +757,7 @@
       <section class="view" id="profile">
         <h1>My Profile</h1>
         <p class="sub">Your account and preferences</p>
-        <div class="card"><h2><span class="badge"><svg class="ico"><use href="#i-cap"/></svg></span>Account</h2><div class="label left">Profile details will go here.</div></div>
+        <div class="card"><h2><span class="badge"><svg class="ico"><use href="#i-cap"/></svg></span>Account</h2><div class="label left" id="acctInfo">Profile details will go here.</div><p class="acct-msg" id="acctMsg" role="status"></p><div id="acctAction"></div></div>
       </section>
 
       <section class="view" id="messages">
@@ -809,7 +818,7 @@
     e.stopPropagation();
     menu.classList.toggle('open');
   });
-  menu.querySelectorAll('button').forEach(item => item.addEventListener('click', () => {
+  menu.querySelectorAll('button[data-go]').forEach(item => item.addEventListener('click', () => {
     menu.classList.remove('open');
     if (item.dataset.go === 'categories' || item.dataset.go === 'myrecipes') openBookTab(item.dataset.go); else showView(item.dataset.go);
   }));
@@ -947,7 +956,7 @@
 
   /* ================= Recipes ================= */
   /* Signed-in user. Replace with Firebase Auth's currentUser (uid + displayName) once auth is wired. */
-  const CURRENT_USER = { uid: 'demo-user', displayName: 'Guest Chef' };
+  let CURRENT_USER = { uid: 'demo-user', displayName: 'Guest Chef' };   // replaced by the signed-in Google user in the auth script
   const RECIPES = [{
     id: "chicken-pot-pie",
     title: "Classic Chicken Pot Pie",
@@ -1341,10 +1350,96 @@
   renderKitchen();
 </script>
 <script>
+  /* ===== Firebase Auth: Google sign-in =====
+     1) Paste your Firebase web config below (Project settings > Your apps > Config).
+        It is safe to publish; it is not a secret.
+     2) Until it is filled in, the app runs as a signed-out demo and hides the sign-in button. */
+  const FIREBASE_CONFIG = {
+    apiKey: "AIzaSyD97lQNlEy7vTcOMxAh2vlt4CT4MwRWjgk",
+    authDomain: "home-plate-3caaa.firebaseapp.com",
+    projectId: "home-plate-3caaa",
+    storageBucket: "home-plate-3caaa.firebasestorage.app",
+    messagingSenderId: "283593888189",
+    appId: "1:283593888189:web:943c0ae93aa38fa73b42d4"
+  };
+  /* e.g. { apiKey: "...", authDomain: "xxx.firebaseapp.com", projectId: "xxx", appId: "..." } */
+
+  const FB_VERSION = '10.14.1';
+  let fbAuth = null, fbApi = null;
+  const $ = id => document.getElementById(id);
+
+  function acctMsg(text) { $('acctMsg').textContent = text || ''; }
+
+  function applyUser(u) {
+    if (u) CURRENT_USER = { uid: u.uid, displayName: u.displayName || 'Chef', photoURL: u.photoURL || '', email: u.email || '' };
+    else CURRENT_USER = FIREBASE_CONFIG ? { uid: null, displayName: 'Guest' } : { uid: 'demo-user', displayName: 'Guest Chef' };
+
+    // header button
+    const first = u ? (CURRENT_USER.displayName.split(' ')[0] || 'Profile') : 'Profile';
+    $('profileLabel').textContent = first;
+    const av = $('profileAvatar');
+    if (u && CURRENT_USER.photoURL) { av.src = CURRENT_USER.photoURL; av.hidden = false; $('profileIcon').style.display = 'none'; }
+    else { av.hidden = true; av.removeAttribute('src'); $('profileIcon').style.display = ''; }
+
+    // menu + profile page
+    const mb = $('authMenuBtn'); mb.hidden = !FIREBASE_CONFIG;
+    $('authMenuLabel').textContent = u ? 'Sign out' : 'Sign in with Google';
+    const info = $('acctInfo'), act = $('acctAction'); act.textContent = '';
+    if (!FIREBASE_CONFIG) {
+      info.textContent = 'Sign-in is not set up yet. You are browsing as a demo guest.';
+    } else if (u) {
+      info.textContent = '';
+      const n = document.createElement('div'); n.className = 'big'; n.textContent = CURRENT_USER.displayName;
+      const e = document.createElement('div'); e.className = 'label left'; e.textContent = CURRENT_USER.email;
+      info.appendChild(n); info.appendChild(e);
+      const b = document.createElement('button'); b.type = 'button'; b.className = 'btn-primary'; b.textContent = 'Sign out';
+      b.addEventListener('click', doSignOut); act.appendChild(b);
+    } else {
+      info.textContent = 'Sign in to save your own recipes, categories and kitchen.';
+      const b = document.createElement('button'); b.type = 'button'; b.className = 'btn-primary'; b.textContent = 'Sign in with Google';
+      b.addEventListener('click', doSignIn); act.appendChild(b);
+    }
+
+    // anything that depends on "who am I" gets redrawn
+    renderBook(); renderCategories();
+    if (typeof currentRecipe !== 'undefined' && currentRecipe) renderRecipe();
+  }
+
+  async function doSignIn() {
+    if (!fbApi) { showView('profile'); acctMsg('Sign-in is still loading. Try again in a moment.'); return; }
+    acctMsg('');
+    const provider = new fbApi.GoogleAuthProvider();
+    try { await fbApi.signInWithPopup(fbAuth, provider); }
+    catch (e) {
+      if (e.code === 'auth/popup-blocked' || e.code === 'auth/operation-not-supported-in-this-environment') {
+        try { await fbApi.signInWithRedirect(fbAuth, provider); } catch (e2) { showView('profile'); acctMsg('Could not start sign-in (' + (e2.code || 'error') + ').'); }
+      } else if (e.code !== 'auth/popup-closed-by-user' && e.code !== 'auth/cancelled-popup-request') {
+        showView('profile'); acctMsg('Sign-in failed (' + (e.code || 'error') + ').');
+      }
+    }
+  }
+  async function doSignOut() { try { await fbApi.signOut(fbAuth); } catch (e) { acctMsg('Could not sign out.'); } }
+
+  $('authMenuBtn').addEventListener('click', () => { menu.classList.remove('open'); CURRENT_USER && CURRENT_USER.uid ? doSignOut() : doSignIn(); });
+
+  async function initAuth() {
+    applyUser(null);                       // start signed out, then Firebase reports the real state
+    if (!FIREBASE_CONFIG) return;
+    try {
+      const base = 'https://www.gstatic.com/firebasejs/' + FB_VERSION + '/';
+      const [appM, authM] = await Promise.all([import(base + 'firebase-app.js'), import(base + 'firebase-auth.js')]);
+      fbAuth = authM.getAuth(appM.initializeApp(FIREBASE_CONFIG)); fbApi = authM;
+      authM.onAuthStateChanged(fbAuth, applyUser);
+      authM.getRedirectResult(fbAuth).catch(() => {});
+    } catch (e) { acctMsg('Sign-in could not load. Check your connection and reload.'); }
+  }
+  initAuth();
+</script>
+<script>
   /* ===== Versioning / cache-busting =====
      Bump APP_VERSION on every upload. Running copies compare themselves to the
      live index.html (fetched with no-store) and reload once if it differs. */
-  const APP_VERSION = '2026-11-11.1';
+  const APP_VERSION = '2026-11-11.3';
   (function () {
     const label = document.getElementById('appVer');
     if (label) label.textContent = 'Home Plate v' + APP_VERSION;
