@@ -1755,7 +1755,8 @@
   /* e.g. { apiKey: "...", authDomain: "xxx.firebaseapp.com", projectId: "xxx", appId: "..." } */
 
   /* App Check (reCAPTCHA v3). Paste the reCAPTCHA *site key* here once it is created. Empty = App Check off. */
-  const APP_CHECK_SITE_KEY = '6LdPNBwuAAAAAEWAjbNrERiJNb9xoaiwnR6Kbx8I';
+  const APP_CHECK_PROVIDER = 'enterprise';   // 'enterprise' = Google Cloud Fraud Defense (reCAPTCHA Enterprise) key; 'v3' = classic reCAPTCHA v3 key
+  const APP_CHECK_SITE_KEY = '6LdgOB0uAAAAABkHXCFB7d1ejYPpckixlz_ZwBB8';   // App Check paused. Previous key: 6LdPNBwuAAAAAEWAjbNrERiJNb9xoaiwnR6Kbx8I (re-enable once the token problem is fixed)
   const ADMIN_EMAIL = 'tdesmond12@gmail.com';   // UI hint only. The real check is in firestore.rules.
   const FB_VERSION = '12.19.0';
   let fbApp = null, fbAuth = null, fbApi = null, fbDb = null, dbApi = null, loadSeq = 0;
@@ -1986,7 +1987,7 @@
         APP_CHECK_SITE_KEY ? import(base + 'firebase-app-check.js').catch(() => null) : null]);
       const app = appM.initializeApp(FIREBASE_CONFIG);
       if (acM) {   // must run before any other Firebase service is used
-        try { acM.initializeAppCheck(app, { provider: new acM.ReCaptchaV3Provider(APP_CHECK_SITE_KEY), isTokenAutoRefreshEnabled: true }); } catch (e) { console.error('App Check', e); }
+        try { acM.initializeAppCheck(app, { provider: new (APP_CHECK_PROVIDER === 'v3' ? acM.ReCaptchaV3Provider : acM.ReCaptchaEnterpriseProvider)(APP_CHECK_SITE_KEY), isTokenAutoRefreshEnabled: true }); } catch (e) { console.error('App Check', e); }
         const lg = document.createElement('p'); lg.className = 'ver legal';
         lg.innerHTML = 'Protected by reCAPTCHA. Google <a href="https://policies.google.com/privacy" target="_blank" rel="noopener noreferrer">Privacy</a> and <a href="https://policies.google.com/terms" target="_blank" rel="noopener noreferrer">Terms</a> apply.';
         const v = document.getElementById('appVer'); if (v) v.after(lg);
@@ -2005,7 +2006,7 @@
   /* ===== Versioning / cache-busting =====
      Bump APP_VERSION on every upload. Running copies compare themselves to the
      live index.html (fetched with no-store) and reload once if it differs. */
-  const APP_VERSION = '2026-11-12.1';
+  const APP_VERSION = '2026-11-12.4';
   (function () {
     const label = document.getElementById('appVer');
     if (label) label.textContent = 'Home Plate v' + APP_VERSION;
