@@ -1506,15 +1506,20 @@
     return { mime: 'image/jpeg', b64: data.split(',')[1], preview: data };
   }
   function importErrorText(e) {
-    const m = String((e && (e.code || e.message)) || '');
-    if (/not_a_recipe/.test(m)) return "That doesn't look like a recipe Gemini can read. Try photos instead, or type it in.";
-    if (/no-json|JSON/i.test(m)) return "Gemini's answer wasn't readable. Please try again.";
-    if (/api-not-enabled|has not been used|not enabled|PERMISSION_DENIED|permission/i.test(m)) return "Gemini isn't switched on for this Firebase project yet (Build > AI Logic).";
-    if (/quota|429|RESOURCE_EXHAUSTED|rate/i.test(m)) return 'Gemini is busy or out of free requests right now. Try again in a minute.';
-    if (/fetch|network|Failed to load|import/i.test(m)) return "Couldn't reach Gemini. Check your connection and try again.";
-    return "Gemini couldn't read that (" + m.slice(0, 70) + '). Try again, or type it in.';
+    const code = String((e && e.code) || ''), msg = String((e && e.message) || e || '');
+    const all = code + ' ' + msg;
+    let nice;
+    if (/not_a_recipe/.test(all)) return "That doesn't look like a recipe Gemini can read. Try photos instead, or type it in.";
+    if (/ai-lib-load/.test(all)) nice = "The Gemini library didn't load.";
+    else if (/no-json|JSON/i.test(all)) nice = "Gemini's answer wasn't readable. Please try again.";
+    else if (/api-not-enabled|has not been used|not been enabled|SERVICE_DISABLED|API_KEY_SERVICE_BLOCKED|\[403/i.test(all)) nice = "Gemini isn't allowed for this project yet. In Firebase, check Build > AI Logic is enabled with the Gemini Developer API.";
+    else if (/\[404|not found|NOT_FOUND/i.test(all)) nice = "Gemini didn't recognize the model name. It may have been renamed.";
+    else if (/quota|\[429|RESOURCE_EXHAUSTED/i.test(all)) nice = 'Gemini is busy or out of free requests right now. Try again in a minute.';
+    else if (/app.?check|appcheck/i.test(all)) nice = 'App Check blocked the request.';
+    else if (/Failed to fetch|NetworkError|Load failed|offline/i.test(all)) nice = "Couldn't reach Gemini. Check your connection and try again.";
+    else nice = "Gemini couldn't read that. Try again, or type it in.";
+    return nice + '  [' + (code || 'error') + ': ' + msg.replace(/\s+/g, ' ').slice(0, 180) + ']';
   }
-
   let fieldN = 0;
   function field(labelText, control, hint, req) {
     const w = el('div', 'f'); const id = 'af' + (++fieldN); control.id = id;
@@ -1831,7 +1836,10 @@
   let aiMod = null; const aiModels = {};
   async function geminiModel(useUrl) {
     if (!fbApp) throw new Error('Sign-in is still loading');
-    if (!aiMod) aiMod = await import('https://www.gstatic.com/firebasejs/' + FB_VERSION + '/firebase-ai.js');
+    if (!aiMod) {
+      try { aiMod = await import('https://www.gstatic.com/firebasejs/' + FB_VERSION + '/firebase-ai.js'); }
+      catch (e) { throw Object.assign(new Error('Could not load the Gemini library: ' + (e && e.message || e)), { code: 'ai-lib-load' }); }
+    }
     const k = useUrl ? 'url' : 'img';
     if (!aiModels[k]) {
       const ai = aiMod.getAI(fbApp, { backend: new aiMod.GoogleAIBackend() });
@@ -1997,7 +2005,7 @@
   /* ===== Versioning / cache-busting =====
      Bump APP_VERSION on every upload. Running copies compare themselves to the
      live index.html (fetched with no-store) and reload once if it differs. */
-  const APP_VERSION = '2026-11-11.7';
+  const APP_VERSION = '2026-11-12.1';
   (function () {
     const label = document.getElementById('appVer');
     if (label) label.textContent = 'Home Plate v' + APP_VERSION;
