@@ -700,6 +700,10 @@
   .s-clearall { background: none; border: 0; color: var(--red); font-weight: 700; font-size: 13px; font-family: inherit; text-decoration: underline; cursor: pointer; padding: 4px 6px; }
   @media (max-width: 899px) { #book.cats-mode .s-filter { margin-right: 32px; } }
   /* ================= Shopping list, This Week, Card Packs ================= */
+  .shop-row.have { cursor: default; }
+  .have-ic { width: 22px; height: 22px; flex: none; margin-top: 1px; border-radius: 50%; background: #eef3e6; border: 1.5px solid #b9ceb0; color: var(--green); display: grid; place-items: center; }
+  .have-ic .ico { width: 13px; height: 13px; stroke-width: 3; }
+  #shopBody .seg { margin-bottom: 14px; }
   .shop-count { font-size: 14px; color: var(--muted); margin: 2px 0 8px; }
   .shop-list { list-style: none; margin: 0; padding: 0; }
   .shop-item { border-bottom: 1px solid var(--line); }
@@ -1191,10 +1195,61 @@
     if (!name) { newMsg.textContent = 'Enter a category name first.'; return; }
     const dupe = allCats().find(c => c.name.toLowerCase() === name.toLowerCase());
     if (dupe) { newMsg.textContent = '"' + dupe.name + '" is already in your list.'; flashRow(dupe.name); return; }
+    const badCat = cleanCheck([['that category name', name]]); if (badCat) { newMsg.textContent = badCat; return; }
     customCats.push(name); saveCustom(customCats); renderCategories();
     newInput.value = ''; newMsg.textContent = ''; newForm.hidden = true; flashRow(name);
   });
 
+
+  /* ===== Family-friendly check =====
+     Recipes and custom categories can't contain strong profanity or slurs. The list is stored scrambled (ROT13) so the page source stays readable.
+     A leading "+" means the word may follow other letters (bullshit, motherfucker). Matching is whole-word, so cumin, shiitake, assorted,
+     grass-fed, rapeseed, peacock and cocktail are fine. It also catches stretched, masked and swapped-letter spellings (fuuuck, f*ck, sh1t, a$$). */
+  const BAD_RAW = '+shpx shpxva +fuvg fuvggva ovgpu onfgneq nffubyr nff onqnff qhzonff wnpxnff fznegnff sngnff xvpxnff phag qvpx pbpx chffl gjng jnax fyhg juber cvff avttre avttn snttbg snt ergneq xvxr fcvp puvax genaal pbba cnxv tbbx jrgonpx ornare phz wvmm qvyqb oybjwbo unaqwbo encr encrq encvfg gvgf gvggl gvggvrf qbhpur qbhpuront';
+  const BAD_SUFFIX = '(?:s|es|ed|er|ers|ing|y|ie|ies|ier|iest|head|heads|face|hole|holes|t?y)?';
+  const ONLY_S = new Set(['spic', 'chink', 'kike', 'paki', 'gook', 'coon', 'fag', 'cum']);   // words that sit inside innocent words (spices, spicy) get no extra endings
+  const OK_WORDS = new Set(['cocker', 'cockers', 'cockerel', 'cockerels', 'assess', 'assess']);
+  let badList = null;
+  function badWords() {
+    if (badList) return badList;
+    const rot = s => s.replace(/[a-zA-Z]/g, c => String.fromCharCode((c <= 'Z' ? 90 : 122) >= (c = c.charCodeAt(0) + 13) ? c : c - 26));
+    badList = rot(BAD_RAW).split(' ').filter(Boolean).map(w => {
+      const pre = w[0] === '+', word = pre ? w.slice(1) : w;
+      const sufs = ONLY_S.has(word) ? ['', 's'] : ['', 's', 'es', 'ed', 'er', 'ers', 'ing', 'y', 'ie', 'ies', 'ier', 'iest', 'head', 'heads', 'face', 'hole', 'holes', 'ty'];
+      return { word, pre, forms: sufs.map(sf => word + sf), re: new RegExp('^' + (pre ? '[a-z]*?' : '') + word.split('').map(ch => ch + '+').join('') + (ONLY_S.has(word) ? '(?:s)?' : BAD_SUFFIX) + '$') };
+    });
+    return badList;
+  }
+  const LEET = { '@': 'a', '$': 's', '!': 'i', '0': 'o', '1': 'i', '3': 'e', '4': 'a', '5': 's', '7': 't', '+': 't' };
+  function profanityHit(text) {
+    let s = String(text || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+    s = s.replace(/cock[\s-]+a[\s-]+(leekie|doodle)/g, ' ');
+    const list = badWords();
+    for (const raw of s.split(/[^a-z0-9@$!*#%+]+/)) {
+      if (!/[a-z]/.test(raw)) continue;
+      const variants = [raw, raw.replace(/[!?*#%+]+$/, '')];
+      for (const v of variants) {
+        const tok = v.replace(/[@$!013457+]/g, c => LEET[c]).replace(/[^a-z*#%]/g, '');
+        if (tok.replace(/[*#%]/g, '').length < 2 || OK_WORDS.has(tok)) continue;
+        if (/[*#%]/.test(tok)) {
+          const t2 = tok.replace(/[#%]/g, '*');
+          const lit = [...t2].filter(ch => ch !== '*').length;
+          if (lit >= 2 && lit >= t2.length * 0.4 && list.some(b => b.forms.some(f => {
+            if (b.pre ? t2.length < f.length : t2.length !== f.length) return false;
+            const off = t2.length - f.length; return [...f].every((ch, i) => t2[off + i] === '*' || t2[off + i] === ch);
+          }))) return raw;
+        } else if (list.some(b => b.re.test(tok))) return raw;
+      }
+    }
+    return null;
+  }
+  const maskWord = w => { w = String(w).replace(/[^a-z0-9@$!*#%+]/gi, ''); return w.length <= 2 ? w[0] + '*' : w[0] + '*'.repeat(w.length - 2) + w[w.length - 1]; };
+  /* fields: [[label, text], ...]. Returns a message for the first problem, or '' if everything is clean. */
+  function cleanCheck(fields) {
+    for (const [label, text] of fields) { const h = profanityHit(text); if (h) return 'Strike called! 3 strikes and you’re out! Please keep it family friendly and refrain from profanity. Check ' + label + ' (' + maskWord(h) + ').'; }
+    return '';
+  }
+  const recipeIsProfane = r => !!profanityHit([r.title, r.blurb, r.sourceName, (r.ingredients || []).join('\n'), (r.steps || []).join('\n')].join('\n'));
 
   /* ================= Recipes ================= */
   /* Signed-in user. Replace with Firebase Auth's currentUser (uid + displayName) once auth is wired. */
@@ -1938,16 +1993,17 @@
     const nm = it.n.toLowerCase();
     return String(lines.find(l => String(l).toLowerCase().includes(nm)) || '');
   }
+  /* Every ingredient of an accepted meal goes on the list. Whether it shows under "To Buy" or "Have" is decided live from My Kitchen. */
   function addToShopping(recipes) {
-    let added = 0;
-    recipes.forEach(r => missingFor(r).forEach(it => {
+    let buy = 0, have = 0;
+    recipes.forEach(r => ingItems(r).forEach(it => {
       const key = canonKey(it.n); if (!key) return;
-      let item = shopItems.find(x => x.key === key);
-      if (!item) { const nm = it.n.trim(); item = { key, name: nm.charAt(0).toUpperCase() + nm.slice(1), checked: false, notes: [] }; shopItems.push(item); added++; }
+      let item = shopItems.find(x => !x.manual && x.key === key);
+      if (!item) { const nm = it.n.trim(); item = { key, name: nm.charAt(0).toUpperCase() + nm.slice(1), checked: false, notes: [] }; shopItems.push(item); if (pantryKeys.includes(key)) have++; else buy++; }
       if (!item.notes.some(x => x.r === r.id)) item.notes.push({ r: r.id, t: cleanStr(r.title, 150), l: cleanStr(recipeLineFor(r, it), 150) });
       item.notes = item.notes.slice(0, 8);
     }));
-    shopItems = shopItems.slice(0, 300); saveShop(); renderShopping(); return added;
+    shopItems = shopItems.slice(0, 300); saveShop(); renderShopping(); return { buy, have };
   }
   /* Typed-in items live only on the shopping list: they are never added to the pantry, recipes or anything else. */
   function addManualItem(text) {
@@ -1965,10 +2021,34 @@
     shopItems = shopItems.filter(i => i.manual || i.notes.length);
     saveShop(); renderShopping();
   }
+  let shopTab = 'buy';
+  const isOwned = it => !it.manual && pantryKeys.includes(it.key);
   function renderShopping() {
     const body = document.getElementById('shopBody'); if (!body) return;
     const keep = document.getElementById('shopAdd'), draft = keep ? keep.value : '', hadFocus = !!keep && document.activeElement === keep;
+    const buy = shopItems.filter(i => !isOwned(i)), have = shopItems.filter(isOwned);
     body.textContent = '';
+    const seg = el('div', 'seg'); seg.setAttribute('role', 'tablist'); seg.setAttribute('aria-label', 'Shopping list sections');
+    [['buy', 'To Buy (' + buy.length + ')'], ['have', 'Have (' + have.length + ')']].forEach(([id, label]) => {
+      const b = el('button', shopTab === id ? 'on' : null, label); b.type = 'button'; b.setAttribute('role', 'tab'); b.setAttribute('aria-selected', shopTab === id);
+      b.addEventListener('click', () => { shopTab = id; renderShopping(); }); seg.appendChild(b);
+    });
+    body.appendChild(seg);
+    if (shopTab === 'have') {
+      const card = cardEl('i-pot', 'Already Have', true);
+      if (!have.length) card.appendChild(emptyBox('Nothing here yet. Ingredients your planned meals need that you already have in My Kitchen show up here.'));
+      else {
+        card.appendChild(el('p', 'shop-count', have.length + ' in your kitchen'));
+        const ul = el('ul', 'shop-list');
+        have.slice().sort((a, b) => cmp(a.name, b.name)).forEach(it => {
+          const li = el('li', 'shop-item'), row = el('div', 'shop-row have'), ic = el('span', 'have-ic'); ic.appendChild(svgUse('i-check'));
+          const tx = el('span', 'shop-tx'); tx.appendChild(el('b', null, it.name)); it.notes.forEach(nt => tx.appendChild(el('small', null, (nt.l ? nt.l + ' \u00b7 ' : '') + nt.t)));
+          row.appendChild(ic); row.appendChild(tx); li.appendChild(row); ul.appendChild(li);
+        });
+        card.appendChild(ul);
+      }
+      body.appendChild(card); return;
+    }
     const card = cardEl('i-cart', 'To Buy', false);
     const form = el('form', 'shop-add'); form.setAttribute('autocomplete', 'off');
     const inp = el('input'); inp.type = 'text'; inp.id = 'shopAdd'; inp.maxLength = 60; inp.placeholder = 'Add an item (milk, paper towels…)'; inp.setAttribute('aria-label', 'Add an item to your shopping list'); inp.enterKeyHint = 'done'; inp.value = draft;
@@ -1977,11 +2057,11 @@
     form.addEventListener('submit', e => { e.preventDefault(); if (addManualItem(inp.value)) { const n = document.getElementById('shopAdd'); if (n) { n.value = ''; n.focus(); } } });
     card.appendChild(form);
     if (hadFocus) setTimeout(() => { const n = document.getElementById('shopAdd'); if (n) n.focus(); }, 0);
-    if (!shopItems.length) { card.appendChild(emptyBox('Your list is empty. Type in anything you need, or accept a pack in the Planner and whatever you are missing lands here.')); body.appendChild(card); return; }
-    const done = shopItems.filter(i => i.checked).length;
-    card.appendChild(el('p', 'shop-count', (shopItems.length - done) + ' to pick up' + (done ? ' \u00b7 ' + done + ' checked off' : '')));
+    if (!buy.length) { card.appendChild(emptyBox('Nothing to buy. Type in anything you need, or accept a pack in the Planner and whatever you are missing lands here.')); body.appendChild(card); return; }
+    const done = buy.filter(i => i.checked).length;
+    card.appendChild(el('p', 'shop-count', (buy.length - done) + ' to pick up' + (done ? ' \u00b7 ' + done + ' checked off' : '')));
     const ul = el('ul', 'shop-list');
-    shopItems.slice().sort((a, b) => (a.checked - b.checked) || cmp(a.name, b.name)).forEach(it => {
+    buy.slice().sort((a, b) => (a.checked - b.checked) || cmp(a.name, b.name)).forEach(it => {
       const li = el('li', 'shop-item' + (it.checked ? ' done' : '')), lab = el('label', 'shop-row'), cb = el('input'); cb.type = 'checkbox'; cb.checked = it.checked;
       cb.addEventListener('change', () => { it.checked = cb.checked; saveShop(); renderShopping(); });
       const tx = el('span', 'shop-tx'); tx.appendChild(el('b', null, it.name));
@@ -1996,12 +2076,14 @@
     });
     card.appendChild(ul);
     const acts = el('div', 'shop-acts');
-    if (done) acts.appendChild(confirmBtn('Remove checked items', 'Tap again to remove', () => { shopItems = shopItems.filter(i => !i.checked); saveShop(); renderShopping(); }));
-    acts.appendChild(confirmBtn('Clear list', 'Tap again to clear', () => { shopItems = []; saveShop(); renderShopping(); }));
+    if (done) acts.appendChild(confirmBtn('Remove checked items', 'Tap again to remove', () => { shopItems = shopItems.filter(i => isOwned(i) || !i.checked); saveShop(); renderShopping(); }));
+    acts.appendChild(confirmBtn('Clear list', 'Tap again to clear', () => { shopItems = shopItems.filter(isOwned); saveShop(); renderShopping(); }));
     card.appendChild(acts); body.appendChild(card);
   }
 
   /* ---- This Week ---- */
+  /* An empty week also empties the randomizer (pulled cards, seen deck, results screen) and sends you back to your shelf of packs. */
+  function resetRandomizer() { rz.draw = []; rz.seen = new Set(); rz.done = null; rz.pack = null; rz.edit = null; rz.state = 'shelf'; plannerTab = 'rand'; }
   function addToWeek(recipes) {
     let n = 0;
     recipes.forEach(r => { if (!weekMeals.some(m => m.rid === r.id)) { weekMeals.push({ rid: r.id, title: cleanStr(r.title, 150) }); n++; } });
@@ -2019,11 +2101,11 @@
         const li = el('li', 'week-item'), open = el('button', 'week-open', m.title); open.type = 'button';
         open.addEventListener('click', () => { if (RECIPES.some(r => r.id === m.rid)) openRecipe(m.rid); else toast('That recipe is no longer available.'); });
         const x = el('button', 'week-x'); x.type = 'button'; x.setAttribute('aria-label', 'Remove ' + m.title + ' from this week'); x.appendChild(svgUse('i-x'));
-        x.addEventListener('click', () => { weekMeals = weekMeals.filter(w => w !== m); saveWeek(); dropFromShopping([m.rid]); renderPlanner(); });
+        x.addEventListener('click', () => { weekMeals = weekMeals.filter(w => w !== m); saveWeek(); dropFromShopping([m.rid]); if (!weekMeals.length) resetRandomizer(); renderPlanner(); });
         li.appendChild(open); li.appendChild(x); ul.appendChild(li);
       });
       card.appendChild(ul);
-      const acts = el('div', 'shop-acts'); acts.appendChild(confirmBtn('Clear the week', 'Tap again to clear', () => { const rids = weekMeals.map(m => m.rid); weekMeals = []; saveWeek(); dropFromShopping(rids); renderPlanner(); })); card.appendChild(acts);
+      const acts = el('div', 'shop-acts'); acts.appendChild(confirmBtn('Clear the week', 'Tap again to clear', () => { const rids = weekMeals.map(m => m.rid); weekMeals = []; saveWeek(); dropFromShopping(rids); resetRandomizer(); renderPlanner(); window.scrollTo(0, 0); })); card.appendChild(acts);
     }
     body.appendChild(card);
   }
@@ -2198,8 +2280,8 @@
   function acceptDraw() {
     const cards = rz.draw, name = rz.pack ? rz.pack.name : 'Pack';
     const w = addToWeek(cards), s = addToShopping(cards);
-    rz.done = { meals: cards.length, week: w, items: s, name }; rz.draw = []; rz.seen = new Set(); rz.state = 'done'; renderPlanner();
-    toast('Added ' + w + ' meal' + (w === 1 ? '' : 's') + ' to This Week and ' + s + ' item' + (s === 1 ? '' : 's') + ' to your shopping list.');
+    rz.done = { meals: cards.length, week: w, buy: s.buy, have: s.have, name }; rz.draw = []; rz.seen = new Set(); rz.state = 'done'; renderPlanner();
+    toast('Added ' + w + ' meal' + (w === 1 ? '' : 's') + ' to This Week. ' + s.buy + ' to buy, ' + s.have + ' already in your kitchen.');
   }
   function rzReveal(body) {
     const p = rz.pack, cards = rz.draw;
@@ -2215,9 +2297,9 @@
         slot.appendChild(need); grid.appendChild(slot);
       });
       body.appendChild(grid);
-      const keys = new Set(); cards.forEach(r => missingFor(r).forEach(it => keys.add(canonKey(it.n))));
+      const all = new Set(), need = new Set(); cards.forEach(r => ingItems(r).forEach(it => { const k = canonKey(it.n); all.add(k); if (!pantryKeys.includes(k)) need.add(k); }));
       const sum = el('div', 'rz-sum');
-      sum.appendChild(el('p', null, 'Accepting adds these meals to This Week and ' + (keys.size ? keys.size + ' missing ingredient' + (keys.size === 1 ? '' : 's') + ' to your shopping list.' : 'nothing new to your shopping list, since you have it all.')));
+      sum.appendChild(el('p', null, 'Accepting adds these meals to This Week and their ingredients to your shopping list: ' + need.size + ' to buy, ' + (all.size - need.size) + ' already in your kitchen.'));
       if (cards.length < p.count) sum.appendChild(el('p', null, 'Only ' + cards.length + ' recipe' + (cards.length === 1 ? '' : 's') + ' matched this pack.'));
       body.appendChild(sum);
     }
@@ -2227,9 +2309,9 @@
     row.appendChild(rzBack()); body.appendChild(row);
   }
   function rzDone(body) {
-    const d = rz.done || { meals: 0, week: 0, items: 0, name: '' }, c = cardEl('i-check', 'Pack accepted', true), w = el('div', 'rz-done');
+    const d = rz.done || { meals: 0, week: 0, buy: 0, have: 0, name: '' }, c = cardEl('i-check', 'Pack accepted', true), w = el('div', 'rz-done');
     w.appendChild(el('div', 'big', d.meals + (d.meals === 1 ? ' meal' : ' meals') + ' locked in'));
-    w.appendChild(el('p', 'rz-intro', d.week + ' added to This Week. ' + (d.items ? d.items + ' new item' + (d.items === 1 ? '' : 's') + ' on your shopping list.' : 'Nothing new needed for your shopping list.'))); c.appendChild(w);
+    w.appendChild(el('p', 'rz-intro', d.week + ' added to This Week. ' + (d.buy ? d.buy + ' new item' + (d.buy === 1 ? '' : 's') + ' to buy' : 'Nothing new to buy') + (d.have ? ', and ' + d.have + ' you already have in your kitchen' : '') + '.')); c.appendChild(w);
     const row = el('div', 'rz-actions');
     const sh = el('button', 'btn-primary sm', 'View shopping list'); sh.type = 'button'; sh.addEventListener('click', () => showView('shopping'));
     const wk = el('button', 'btn-ghost', 'See This Week'); wk.type = 'button'; wk.addEventListener('click', () => { plannerTab = 'week'; rz.state = 'shelf'; renderPlanner(); });
@@ -2253,6 +2335,7 @@
     _showView(id);
     if (id === 'recipe' || id === 'addrecipe') buttons.forEach(b => { const on = b.dataset.view === 'book'; b.classList.toggle('active', on); if (on) b.setAttribute('aria-current', 'page'); });
     if (id === 'book') requestAnimationFrame(updateActive);
+    if (id === 'shopping' && typeof renderShopping === 'function') renderShopping();
   };
   renderCategories();
   renderBook();
@@ -2526,6 +2609,8 @@
       if (!title) { err.textContent = 'Give the recipe a name.'; F.title.focus(); return; }
       if (!ingredients.length) { err.textContent = 'Add at least one ingredient.'; F.ings.focus(); return; }
       if (!steps.length) { err.textContent = 'Add at least one direction.'; F.steps.focus(); return; }
+      const badText = cleanCheck([['the recipe name', title], ['the description', F.blurb.value], ['the ingredients', ingredients.join('\n')], ['the directions', steps.join('\n')], ['the creator name', cname], ['the source', srcRaw]]);
+      if (badText) { err.textContent = badText; return; }
       if (needCredit() && (!cname || !srcRaw)) { err.textContent = 'Please credit the original creator and the website or source.'; (cname ? F.csrc : F.cname).focus(); return; }
       const src = parseSource(srcRaw);
       if (S.mode === 'link' && !src.url) { err.textContent = 'For a link import, the source needs to be the recipe’s web address.'; F.csrc.focus(); return; }
@@ -2832,7 +2917,7 @@
       if (seq !== loadSeq) return;
       const map = new Map();
       snaps.forEach(s => s.forEach(d => map.set(d.id, Object.assign({ id: d.id }, d.data()))));
-      const list = [...map.values()].sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0) || String(a.title).localeCompare(String(b.title)));
+      const list = [...map.values()].filter(r => (u && r.ownerId === u.uid) || !recipeIsProfane(r)).sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0) || String(a.title).localeCompare(String(b.title)));
       RECIPES.splice(0, RECIPES.length, ...list);
     } catch (e) { console.error(e); toast('Could not load recipes.'); }
     try {
@@ -2963,7 +3048,7 @@
   /* ===== Versioning / cache-busting =====
      Bump APP_VERSION on every upload. Running copies compare themselves to the
      live index.html (fetched with no-store) and reload once if it differs. */
-  const APP_VERSION = '2026-11-12.20';
+  const APP_VERSION = '2026-11-12.28';
   (function () {
     const label = document.getElementById('appVer');
     if (label) label.textContent = 'Home Plate v' + APP_VERSION;
