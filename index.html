@@ -2112,10 +2112,6 @@
       info.appendChild(n); info.appendChild(e);
       const b = document.createElement('button'); b.type = 'button'; b.className = 'btn-primary'; b.textContent = 'Sign out';
       b.addEventListener('click', doSignOut); act.appendChild(b);
-      if (fbDb && CURRENT_USER.emailVerified && CURRENT_USER.email.toLowerCase() === ADMIN_EMAIL) {
-        const s = document.createElement('button'); s.type = 'button'; s.className = 'btn-ghost'; s.textContent = 'Load starter data';
-        s.addEventListener('click', seedDatabase); act.appendChild(s);
-      }
     } else {
       info.textContent = 'Sign in to save your own recipes, categories and kitchen.';
       const b = document.createElement('button'); b.type = 'button'; b.className = 'btn-primary'; b.textContent = 'Sign in with Google';
@@ -2123,6 +2119,7 @@
     }
 
     if (typeof renderAdd === 'function' && document.getElementById('addrecipe').classList.contains('active')) renderAdd();
+    if (typeof refreshTidyBtn === 'function') refreshTidyBtn();
     // anything that depends on "who am I" gets redrawn
     renderBook(); renderCategories();
     if (typeof currentRecipe !== 'undefined' && currentRecipe) renderRecipe();
@@ -2270,18 +2267,33 @@
       return out.length ? out.slice(0, 100) : null;
     } catch (e) { console.warn('Ingredient tidy-up skipped', e); return null; }
   }
-  /* Once per sign-in: recipes you own that were saved before this feature get their pantry names from Gemini. */
-  let backfillFor = null;
-  async function backfillIngredients() {
-    if (!dbUserReady() || !fbApp || backfillFor === CURRENT_USER.uid) return;
-    backfillFor = CURRENT_USER.uid;
-    const todo = RECIPES.filter(r => r.ownerId === CURRENT_USER.uid && !(Array.isArray(r.ingKeys) && r.ingKeys.length) && Array.isArray(r.ingredients) && r.ingredients.length).slice(0, 15);
-    let changed = false;
+  /* Profile button: recipes you own that were saved before the pantry feature get their pantry names from Gemini. */
+  const needsTidy = r => r.ownerId === (CURRENT_USER && CURRENT_USER.uid) && !(Array.isArray(r.ingKeys) && r.ingKeys.length) && Array.isArray(r.ingredients) && r.ingredients.length;
+  let tidying = false;
+  function refreshTidyBtn() {
+    const act = $('acctAction'); if (!act) return;
+    let b = $('tidyBtn');
+    const pending = dbUserReady() && fbApp ? RECIPES.filter(needsTidy).length : 0;
+    if (!pending || tidying) { if (b && !tidying) b.remove(); return; }
+    if (!b) { b = document.createElement('button'); b.type = 'button'; b.id = 'tidyBtn'; b.className = 'btn-ghost'; b.addEventListener('click', runTidy); act.appendChild(b); }
+    b.textContent = 'Tidy ingredient names (' + pending + ' recipe' + (pending === 1 ? '' : 's') + ')';
+  }
+  async function runTidy() {
+    const b = $('tidyBtn'); if (tidying || !dbUserReady() || !fbApp) return;
+    const todo = RECIPES.filter(needsTidy); if (!todo.length) { refreshTidyBtn(); return; }
+    tidying = true; if (b) { b.disabled = true; } acctMsg('');
+    let done = 0, failed = false;
     for (const r of todo) {
-      const ik = await ingKeysFor(r.ingredients); if (!ik) break;
-      try { await dbApi.updateDoc(dbApi.doc(fbDb, 'recipes', r.id), { ingKeys: ik }); r.ingKeys = ik; changed = true; } catch (e) { console.warn(e); break; }
+      if (b) b.textContent = 'Tidying… ' + done + ' of ' + todo.length;
+      const ik = await ingKeysFor(r.ingredients);
+      if (!ik) { failed = true; break; }
+      try { await dbApi.updateDoc(dbApi.doc(fbDb, 'recipes', r.id), { ingKeys: ik }); r.ingKeys = ik; done++; } catch (e) { console.warn(e); failed = true; break; }
     }
-    if (changed) renderKitchen();
+    tidying = false;
+    renderKitchen();
+    if (!failed) { const m = 'Done. Tidied ingredient names on ' + done + ' recipe' + (done === 1 ? '' : 's') + '.'; acctMsg(m); toast(m); }
+    else { const m = 'Tidied ' + done + ' of ' + todo.length + '. Gemini was not available for the rest. You can try again in a moment.'; acctMsg(m); toast(m); if (b) { b.disabled = false; } }
+    refreshTidyBtn();
   }
 
   /* ===== Firestore data layer =====
@@ -2342,7 +2354,7 @@
     } catch (e) { console.error(e); }
     if (currentRecipe && !RECIPES.some(r => r.id === currentRecipe)) { currentRecipe = null; if (document.getElementById('recipe').classList.contains('active')) showView('book'); }
     renderCategories(); renderBook(); renderKitchen(); if (currentRecipe) renderRecipe();
-    if (u && seq === loadSeq) backfillIngredients();
+    refreshTidyBtn();
   }
 
   /* Admin only (rules enforce it): loads categories, tools and the starter recipe. Safe to run twice. */
@@ -2394,7 +2406,7 @@
   /* ===== Versioning / cache-busting =====
      Bump APP_VERSION on every upload. Running copies compare themselves to the
      live index.html (fetched with no-store) and reload once if it differs. */
-  const APP_VERSION = '2026-11-12.13';
+  const APP_VERSION = '2026-11-12.15';
   (function () {
     const label = document.getElementById('appVer');
     if (label) label.textContent = 'Home Plate v' + APP_VERSION;
