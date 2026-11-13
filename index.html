@@ -670,12 +670,19 @@
   .search-btn:focus-visible { outline: 2px solid var(--red); outline-offset: 2px; }
   .search-btn .ico { width: 24px; height: 24px; stroke-width: 1.7; }
   .search { position: relative; margin: 0 0 14px; }
-  .search input { width: 100%; font-family: inherit; font-size: 16px; padding: 12px 44px 12px 44px; border: 1.5px solid #e2d3ab; border-radius: 999px; background: #fff; color: var(--ink); -webkit-appearance: none; appearance: none; }
+  .search input { width: 100%; font-family: inherit; font-size: 16px; padding: 12px 92px 12px 44px; border: 1.5px solid #e2d3ab; border-radius: 999px; background: #fff; color: var(--ink); -webkit-appearance: none; appearance: none; }
   .search input::-webkit-search-cancel-button, .search input::-webkit-search-decoration { -webkit-appearance: none; display: none; }
   .search input:focus { outline: 2px solid var(--red); outline-offset: 1px; }
   .search .s-ico { position: absolute; left: 15px; top: 50%; transform: translateY(-50%); width: 22px; height: 22px; color: var(--green); pointer-events: none; }
-  .search .s-clear { position: absolute; right: 7px; top: 50%; transform: translateY(-50%); width: 32px; height: 32px; display: grid; place-items: center; border: 0; border-radius: 50%; background: var(--tan); color: var(--navy); cursor: pointer; padding: 0; }
+  .search .s-clear { position: absolute; right: 50px; top: 50%; transform: translateY(-50%); width: 32px; height: 32px; display: grid; place-items: center; border: 0; border-radius: 50%; background: var(--tan); color: var(--navy); cursor: pointer; padding: 0; }
   .search .s-clear[hidden] { display: none; }
+  .search .s-filt { position: absolute; right: 7px; top: 50%; transform: translateY(-50%); width: 36px; height: 36px; display: grid; place-items: center; border: 0; border-radius: 50%; background: var(--tan); color: var(--navy); cursor: pointer; padding: 0; }
+  .search .s-filt .ico { width: 19px; height: 19px; }
+  .search .s-filt.on { background: var(--green); color: #fff; }
+  .search .s-filt:focus-visible { outline: 2px solid var(--red); }
+  .search .s-filt b { position: absolute; top: -4px; right: -4px; min-width: 17px; height: 17px; padding: 0 4px; box-sizing: border-box; border-radius: 9px; background: var(--red); color: #fff; font-size: 11px; line-height: 17px; text-align: center; font-weight: 800; }
+  .search .s-filt b[hidden] { display: none; }
+  .s-filter[hidden] { display: none; }
   .search .s-clear .ico { width: 14px; height: 14px; stroke-width: 2.4; }
   .search .s-clear:focus-visible { outline: 2px solid var(--red); }
   @media (max-width: 899px) { #book.cats-mode .search { margin-right: 32px; } }
@@ -688,8 +695,116 @@
   .s-filter select:focus { outline: 2px solid var(--red); outline-offset: 1px; }
   .s-filter .chips { margin-top: 8px; }
   .s-filter .chips:empty { display: none; }
+  .s-have { display: flex; align-items: flex-start; gap: 10px; margin-top: 10px; font-size: 14.5px; line-height: 1.3; color: var(--ink); cursor: pointer; }
+  .s-have input { width: 20px; height: 20px; margin: 0; flex: none; accent-color: var(--green); cursor: pointer; }
   .s-clearall { background: none; border: 0; color: var(--red); font-weight: 700; font-size: 13px; font-family: inherit; text-decoration: underline; cursor: pointer; padding: 4px 6px; }
   @media (max-width: 899px) { #book.cats-mode .s-filter { margin-right: 32px; } }
+  /* ================= Shopping list, This Week, Card Packs ================= */
+  .shop-count { font-size: 14px; color: var(--muted); margin: 2px 0 8px; }
+  .shop-list { list-style: none; margin: 0; padding: 0; }
+  .shop-item { border-bottom: 1px solid var(--line); }
+  .shop-item:last-child { border-bottom: 0; }
+  .shop-row { display: flex; gap: 12px; align-items: flex-start; padding: 11px 2px; cursor: pointer; }
+  .shop-row input { width: 22px; height: 22px; margin-top: 1px; flex: none; accent-color: var(--green); cursor: pointer; }
+  .shop-tx b { display: block; font-size: 16px; color: var(--navy); }
+  .shop-tx small { display: block; font-size: 13px; color: var(--muted); line-height: 1.3; margin-top: 2px; }
+  .shop-item.done .shop-tx b { text-decoration: line-through; color: var(--muted); font-weight: 600; }
+  .shop-item.done .shop-tx small { display: none; }
+  .shop-add { display: flex; gap: 8px; margin: 2px 0 12px; }
+  .shop-add input { flex: 1; min-width: 0; font-family: inherit; font-size: 16px; padding: 11px 14px; border: 1.5px solid #e2d3ab; border-radius: 999px; background: #fff; color: var(--ink); }
+  .shop-add input:focus { outline: 2px solid var(--red); outline-offset: 1px; }
+  .shop-add .btn-primary { flex: none; margin: 0; padding: 11px 20px; width: auto; }
+  .shop-item { display: flex; align-items: flex-start; gap: 8px; }
+  .shop-item .shop-row { flex: 1; min-width: 0; }
+  .shop-item .week-x { margin-top: 7px; }
+  .shop-acts { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
+  .btn-ghost.sm { padding: 8px 14px; font-size: 14px; }
+  .btn-ghost.warn { border-color: var(--red); color: var(--red); font-weight: 700; }
+  .week-list { list-style: none; margin: 0; padding: 0; }
+  .week-item { display: flex; align-items: center; gap: 8px; border-bottom: 1px solid var(--line); padding: 4px 0; }
+  .week-item:last-child { border-bottom: 0; }
+  .week-open { flex: 1; text-align: left; background: none; border: 0; font-family: inherit; font-size: 16px; font-weight: 600; color: var(--navy); padding: 10px 2px; cursor: pointer; }
+  .week-x { width: 36px; height: 36px; display: grid; place-items: center; border: 0; border-radius: 50%; background: var(--tan); color: var(--navy); cursor: pointer; padding: 0; flex: none; }
+  .week-x .ico { width: 14px; height: 14px; stroke-width: 2.4; }
+  .rz-intro { color: var(--muted); font-size: 15px; margin: 0 0 14px; }
+  .rz-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
+  .rz-h { font-size: 22px; color: var(--navy); margin: 0 0 10px; }
+
+  .pack { --p1: #4a8a50; --p2: #1d4424; --pa: #f7e7b4; --pi: #fdf9ee; --pt: #cc4742; position: relative; container-type: inline-size; width: 100%; max-width: 250px; aspect-ratio: 5 / 7; margin: 0 auto; filter: drop-shadow(0 12px 12px rgba(23, 51, 63, .35)); }
+  .pack-body { position: absolute; inset: 0; background: linear-gradient(150deg, var(--p1), var(--p2)); border-radius: 0 0 2cqw 2cqw; overflow: hidden; z-index: 2; }
+  .pack-body::before { content: ""; position: absolute; inset: 0; background: linear-gradient(115deg, transparent 35%, rgba(255,255,255,.34) 48%, transparent 60%); background-size: 260% 100%; animation: sheen 4.5s ease-in-out infinite; pointer-events: none; }
+  .pack-body::after, .pack-flap::before { content: ""; position: absolute; left: 0; right: 0; height: 5.5%; background: repeating-linear-gradient(90deg, rgba(0,0,0,.28) 0 1.2cqw, rgba(255,255,255,.22) 1.2cqw 2.4cqw); }
+  .pack-body::after { bottom: 0; }
+  .pack-flap::before { top: 0; z-index: 2; height: 25%; }
+  @keyframes sheen { 0% { background-position: 150% 0; } 55%, 100% { background-position: -50% 0; } }
+  .pack-face { position: absolute; inset: 22% 6% 8%; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; color: var(--pi); gap: 3cqw; }
+  .pack-badge { width: 32cqw; aspect-ratio: 1; border-radius: 50%; background: var(--pa); display: grid; place-items: center; border: 1.2cqw solid rgba(255,255,255,.75); overflow: hidden; box-shadow: 0 1.5cqw 3cqw rgba(0,0,0,.25); }
+  .pack-badge img { width: 88%; height: 88%; object-fit: contain; }
+  .pack-name { font-family: Georgia, 'Times New Roman', serif; font-weight: 700; font-size: 9cqw; line-height: 1.05; text-shadow: 0 .4cqw 0 rgba(0,0,0,.22); max-width: 100%; overflow-wrap: anywhere; }
+  .pack-ribbon { background: var(--pt); color: #fff; font-weight: 800; font-size: 4.3cqw; letter-spacing: .14em; text-transform: uppercase; padding: 1.4cqw 5cqw; transform: rotate(-4deg); box-shadow: 0 1cqw 2cqw rgba(0,0,0,.22); }
+  .pack-sub { font-size: 4.2cqw; letter-spacing: .14em; text-transform: uppercase; font-weight: 800; color: var(--pa); }
+  .pack-flap { position: absolute; left: 0; right: 0; top: 0; height: 22%; overflow: hidden; z-index: 3; border: 0; padding: 0; margin: 0; background: none; transform-origin: 0 100%; touch-action: none; cursor: grab; font: inherit; }
+  .pack-flap:not(.drag) { transition: transform .28s cubic-bezier(.2,.9,.3,1.2); }
+  .pack-flap.drag { cursor: grabbing; }
+  .pack-flap:focus-visible { outline: 3px solid var(--red); outline-offset: -3px; }
+  .pack-flap-bg { position: absolute; left: 0; top: 0; width: 100%; height: 454.5%; background: linear-gradient(150deg, var(--p1), var(--p2)); }
+  .pack-flap-txt { position: absolute; left: 0; right: 0; top: 30%; text-align: center; font-size: 4.2cqw; font-weight: 800; letter-spacing: .2em; text-transform: uppercase; color: var(--pi); opacity: .9; }
+  .pack-flap.wig { animation: wig 2.6s ease-in-out infinite; }
+  .pack-flap.drag.wig { animation: none; }
+  @keyframes wig { 0%, 70%, 100% { transform: none; } 78% { transform: translateX(2.5cqw) rotate(1.2deg); } 86% { transform: translateX(-1cqw); } }
+  .pack-peek { position: absolute; left: 11%; right: 11%; top: 16%; height: 62%; z-index: 1; }
+  .pack-peek i { position: absolute; inset: 0; background: #fbf3dd; border: 1.4cqw solid #1d4a5c; border-radius: 3cqw; }
+  .pack-peek i:nth-child(1) { transform: rotate(-5deg); background: #f1e2b8; }
+  .pack-peek i:nth-child(2) { transform: rotate(4deg); background: #fff; }
+  .pack.empty { filter: grayscale(.7) drop-shadow(0 8px 10px rgba(23,51,63,.25)); opacity: .75; }
+  .rz-stage { position: relative; overflow: hidden; padding: 110px 0 8px; text-align: center; }
+  .rz-fx { position: absolute; inset: 0; pointer-events: none; z-index: 5; }
+  .rz-hint { margin: 18px 0 4px; color: var(--navy); font-weight: 700; font-size: 16px; }
+  .rz-hint span { display: inline-block; animation: nudge 1.3s ease-in-out infinite; }
+  @keyframes nudge { 0%, 100% { transform: translateX(0); } 50% { transform: translateX(8px); } }
+  .rz-meta { color: var(--muted); font-size: 14px; margin: 4px 0 14px; }
+  .fx-p { position: absolute; left: 0; top: 0; will-change: transform, opacity; }
+  .fx-ball { width: 12px; height: 12px; border-radius: 50%; background: #fff; border: 2px solid #cc4742; }
+  .fx-star { font-size: 18px; line-height: 1; }
+  .fx-conf { width: 8px; height: 13px; border-radius: 2px; }
+  .fx-ray { position: absolute; left: 0; top: 0; width: 4px; height: 30px; margin-left: -2px; border-radius: 2px; background: linear-gradient(#ffe08a, rgba(255,224,138,0)); transform-origin: 50% 0; }
+  .fx-flash { position: absolute; left: 0; top: 0; width: 240px; height: 240px; margin: -120px 0 0 -120px; border-radius: 50%; background: radial-gradient(circle, rgba(255,246,200,.95), rgba(255,246,200,0) 65%); }
+  .pack-shelf { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 22px 16px; margin-bottom: 20px; }
+  @media (min-width: 700px) { .pack-shelf { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+  .pack-tile { text-align: center; min-width: 0; }
+  .pack-open { display: block; width: 100%; background: none; border: 0; padding: 0; cursor: pointer; transition: transform .18s; }
+  .pack-open:hover { transform: translateY(-4px) rotate(-1deg); }
+  .pack-open:focus-visible { outline: 2px solid var(--navy); outline-offset: 6px; border-radius: 8px; }
+  .pack-tname { display: block; margin-top: 10px; font-size: 16px; color: var(--navy); overflow-wrap: anywhere; }
+  .pack-tsum { display: block; font-size: 12.5px; color: var(--muted); line-height: 1.3; margin: 3px 0 8px; }
+  .rz-prev { max-width: 150px; margin: 0 auto 18px; }
+  .art-picks { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+  .art-pick { background: none; border: 2px solid transparent; border-radius: 12px; padding: 8px 6px 6px; cursor: pointer; font-family: inherit; color: var(--navy); font-size: 12.5px; font-weight: 600; }
+  .art-pick .pack { max-width: 62px; filter: drop-shadow(0 3px 3px rgba(0,0,0,.3)); margin-bottom: 6px; }
+  .art-pick.on { border-color: var(--red); background: var(--red-soft); }
+  .art-pick:focus-visible, .num-pick:focus-visible { outline: 2px solid var(--navy); outline-offset: 2px; }
+  .num-picks { display: flex; gap: 8px; flex-wrap: wrap; }
+  .num-pick { width: 42px; height: 42px; border-radius: 50%; border: 1.5px solid var(--line); background: #fff; font-family: inherit; font-size: 17px; font-weight: 700; color: var(--navy); cursor: pointer; }
+  .num-pick.on { background: var(--green); color: var(--cream); border-color: var(--green); }
+  .rz-dlabel { display: block; margin-top: 4px; font-size: 14px; color: var(--navy); font-weight: 600; }
+  .deal { animation: dealIn .7s cubic-bezier(.2,.9,.25,1.08) both; }
+  @keyframes dealIn { from { opacity: 0; transform: translateY(-90px) scale(.55) rotate(-8deg); } to { opacity: 1; transform: none; } }
+  .rz-need { font-size: 12.5px; line-height: 1.3; color: var(--muted); margin: 7px 2px 0; }
+  .rz-need b { color: var(--red); }
+  .rz-need.ok b { color: var(--green); }
+  .rz-sum { background: var(--card); border: 1.5px solid var(--line); border-radius: 14px; padding: 14px 16px; margin: 18px 0 4px; font-size: 15px; color: var(--ink); }
+  .rz-sum p + p { margin-top: 6px; }
+  .rz-done { text-align: center; padding: 6px 0 2px; }
+  .rz-done .big { margin-bottom: 8px; }
+  .gm-overlay { position: fixed; inset: 0; z-index: 200; display: grid; place-items: center; padding: 20px; background: rgba(23, 51, 63, .55); }
+  .gm-box { width: 100%; max-width: 420px; background: var(--card); border-radius: 18px; padding: 22px 20px 18px; box-shadow: 0 20px 50px -12px rgba(0,0,0,.5); border: 1.5px solid var(--line); }
+  .gm-box h2 { font-size: 21px; color: var(--navy); margin: 0 0 8px; }
+  .gm-box p { font-size: 15.5px; line-height: 1.4; color: var(--ink); margin: 0 0 10px; }
+  .gm-box .gm-list { font-weight: 700; color: var(--navy); }
+  .gm-box .gm-small { font-size: 13.5px; color: var(--muted); }
+  .gm-acts { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
+  .gm-acts .btn-primary { width: auto; margin: 0; }
+  @media (prefers-reduced-motion: reduce) { .pack-body::before, .pack-flap.wig, .rz-hint span, .deal { animation: none; } .pack-flap:not(.drag) { transition: none; } }
 </style>
 </head>
 <body>
@@ -699,6 +814,7 @@
   <symbol id="i-book" viewBox="0 0 24 24"><path d="M3 5c3-1.2 6-.8 9 1.2v13c-3-2-6-2.4-9-1.2z"/><path d="M21 5c-3-1.2-6-.8-9 1.2v13c3-2 6-2.4 9-1.2z"/></symbol>
   <symbol id="i-diamond" viewBox="0 0 24 24"><path d="M12 3l9 9-9 9-9-9z"/><circle cx="12" cy="12" r="1.6"/></symbol>
   <symbol id="i-fridge" viewBox="0 0 24 24"><rect x="5.5" y="2.5" width="13" height="19" rx="2.2"/><path d="M5.5 10h13"/><path d="M8.5 5.5v2M8.5 12.5v3"/></symbol>
+  <symbol id="i-sliders" viewBox="0 0 24 24"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/></symbol>
   <symbol id="i-jar" viewBox="0 0 24 24"><rect x="6" y="8" width="12" height="13" rx="3"/><path d="M8 8V6h8v2"/><path d="M9.5 3h5v3h-5z"/></symbol>
   <symbol id="i-whisk" viewBox="0 0 24 24"><rect x="6" y="8.5" width="12" height="7" rx="2.5"/><path d="M2.5 12H6M18 12h3.5"/><path d="M9.5 8.5v7M14.5 8.5v7" stroke-opacity=".45"/></symbol>
   <symbol id="i-cap" viewBox="0 0 24 24"><path d="M5 15a7 7 0 0 1 14 0"/><path d="M3 15.5h18c0 2-3 3-9 3s-9-1-9-3z"/><path d="M12 8.5v7"/><circle cx="12" cy="7.2" r=".7"/></symbol>
@@ -786,7 +902,7 @@
         <div class="card" style="margin-top:18px">
           <h2><span class="badge"><svg class="ico"><use href="#i-diamond"/></svg></span>This Week</h2>
           <div class="row">
-            <div class="big">0 meals</div>
+            <div class="big" id="weekCount">0 meals</div>
             <div class="label">Planned</div>
           </div>
         </div>
@@ -796,7 +912,7 @@
       <section class="view" id="shopping">
         <h1>Shopping List</h1>
         <p class="sub">Everything you need to pick up</p>
-        <div class="card"><h2><span class="badge"><svg class="ico"><use href="#i-cart"/></svg></span>To Buy</h2><div class="label left">Your list is empty.</div></div>
+        <div id="shopBody"></div>
       </section>
 
       <!-- MY KITCHEN -->
@@ -829,12 +945,14 @@
         <p class="sub" id="bookSub">All your saved recipes</p>
         <div class="search" id="bookSearch" role="search">
           <svg class="ico s-ico" aria-hidden="true"><use href="#i-search"/></svg>
-          <input id="bookSearchInput" type="search" placeholder="Search by name or ingredient" aria-label="Search recipes by name or ingredient" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="search">
+          <input id="bookSearchInput" type="search" placeholder="Search name or ingredient" aria-label="Search recipes by name or ingredient" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="search">
           <button class="s-clear" id="searchClear" type="button" aria-label="Clear search" hidden><svg class="ico"><use href="#i-x"/></svg></button>
+          <button class="s-filt" id="filtBtn" type="button" aria-label="Search filters" aria-expanded="false" aria-controls="searchFilter"><svg class="ico"><use href="#i-sliders"/></svg><b id="filtCount" hidden></b></button>
         </div>
-        <div class="s-filter" id="searchFilter">
+        <div class="s-filter" id="searchFilter" hidden>
           <select id="searchCatSel" aria-label="Only show recipes in a category"></select>
           <div class="chips" id="searchChips"></div>
+          <label class="s-have"><input type="checkbox" id="haveOnly"><span>Only recipes I can make with what’s in my kitchen</span></label>
         </div>
         <div class="seg" id="bookSeg" role="tablist" aria-label="Browse recipes by">
           <button type="button" role="tab" data-mode="recipes" class="on" aria-selected="true">All Recipes</button>
@@ -867,7 +985,11 @@
       <section class="view" id="planner">
         <h1>Planner</h1>
         <p class="sub">Plan your week</p>
-        <div class="card"><h2><span class="badge"><svg class="ico"><use href="#i-diamond"/></svg></span>This Week</h2><div class="label left">No meals planned.</div></div>
+        <div class="seg" id="planSeg" role="tablist" aria-label="Planner sections">
+          <button type="button" role="tab" data-tab="week" class="on" aria-selected="true">This Week</button>
+          <button type="button" role="tab" data-tab="rand" aria-selected="false">Randomizer</button>
+        </div>
+        <div id="planBody"></div>
       </section>
 
       <!-- PROFILE MENU PAGES -->
@@ -1223,12 +1345,12 @@
   function emptyBox(text) { return el('div', 'label left', text); }
 
   /* ===== Search by recipe name or ingredient ===== */
-  let bookQuery = '', searchCats = [], drawnSig = '';
+  let bookQuery = '', searchCats = [], drawnSig = '', onlyHave = false;
   const bookSearchInput = document.getElementById('bookSearchInput'), searchClear = document.getElementById('searchClear');
   const norm = s => String(s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
   const searchCatSel = document.getElementById('searchCatSel'), searchChips = document.getElementById('searchChips');
   function setQuery(q) { bookQuery = q; bookSearchInput.value = q; searchClear.hidden = !q; }
-  function resetSearch() { setQuery(''); searchCats = []; }
+  function resetSearch() { setQuery(''); searchCats = []; onlyHave = false; filtOpen = false; }
   /* Category filter: pick one or more; a recipe shows if it is in ANY of the picked categories. None picked = all categories. */
   function drawSearchFilter() {
     const names = allCats().map(c => c.name), sig = names.join('|') + '#' + searchCats.join('|');
@@ -1246,12 +1368,26 @@
     if (searchCats.length > 1) { const b = el('button', 's-clearall', 'Clear all'); b.type = 'button'; b.addEventListener('click', () => { searchCats = []; renderBook(); }); searchChips.appendChild(b); }
   }
   searchCatSel.addEventListener('change', () => { const v = searchCatSel.value; if (v && !searchCats.includes(v)) { searchCats.push(v); renderBook(); } searchCatSel.value = ''; });
+  const filtBtn = document.getElementById('filtBtn'), filtCount = document.getElementById('filtCount'), filtPanel = document.getElementById('searchFilter');
+  let filtOpen = false;
+  function syncFilt() {
+    const n = searchCats.length + (onlyHave ? 1 : 0);
+    filtPanel.hidden = !filtOpen; filtBtn.setAttribute('aria-expanded', filtOpen); filtBtn.classList.toggle('on', filtOpen || n > 0);
+    filtCount.hidden = !n; filtCount.textContent = n;
+    filtBtn.setAttribute('aria-label', n ? 'Search filters, ' + n + ' on' : 'Search filters');
+  }
+  filtBtn.addEventListener('click', () => { filtOpen = !filtOpen; syncFilt(); });
+  const haveOnlyBox = document.getElementById('haveOnly');
+  haveOnlyBox.addEventListener('change', () => { onlyHave = haveOnlyBox.checked; renderBook(); });
+  /* Optional: keep only recipes whose every ingredient is ticked in My Kitchen (pantry + refrigerator). */
+  function canMake(r, have) { const items = ingItems(r); return items.length > 0 && items.every(it => have.has(canonKey(it.n))); }
   /* Every word typed must appear in the name or in some ingredient. Name matches come first. */
   function searchHits(q) {
     const toks = norm(q).split(/\s+/).filter(Boolean);
     const pool = bookMode === 'myrecipes' ? RECIPES.filter(r => r.ownerId === CURRENT_USER.uid) : RECIPES;
-    const out = [];
+    const out = [], have = new Set(pantryKeys);
     pool.forEach(r => {
+      if (onlyHave && !canMake(r, have)) return;
       if (searchCats.length && !catsFor(r).some(c => searchCats.includes(c))) return;
       const title = norm(r.title), raw = r.ingredients || [], ings = raw.map(norm);
       if (!toks.every(w => title.includes(w) || ings.some(i => i.includes(w)))) return;
@@ -1268,12 +1404,13 @@
   document.getElementById('searchBtn').addEventListener('click', () => {
     bookMode = 'recipes'; bookCat = null; renderBook(); showView('book'); window.scrollTo(0, 0); bookSearchInput.focus();
   });
-  document.querySelector('nav button[data-view=book]').addEventListener('click', () => { if (bookQuery || searchCats.length) { resetSearch(); renderBook(); } });
+  document.querySelector('nav button[data-view=book]').addEventListener('click', () => { if (bookQuery || searchCats.length || onlyHave) { resetSearch(); renderBook(); } });
 
   function renderBook() {
     bookSeg.querySelectorAll('button').forEach(b => { const on = b.dataset.mode === bookMode; b.classList.toggle('on', on); b.setAttribute('aria-selected', on); });
     drawSearchFilter();
-    const q = bookQuery.trim(), searching = !!q || searchCats.length > 0;
+    haveOnlyBox.checked = onlyHave; syncFilt();
+    const q = bookQuery.trim(), searching = !!q || searchCats.length > 0 || onlyHave;
     const showCats = bookMode === 'categories' && !bookCat && !searching;
     document.getElementById('bookCats').hidden = !showCats; bookBody.hidden = showCats;
     document.getElementById('book').classList.toggle('cats-mode', showCats);
@@ -1281,9 +1418,12 @@
     bookBody.textContent = '';
     if (searching) {
       const hits = searchHits(q);
-      const h = el('h2', 'filter-title', q ? 'Results for \u201c' + q + '\u201d' : 'Recipes in ' + searchCats.slice().sort(cmp).join(' or ')); h.appendChild(el('small', null, hits.length + (hits.length === 1 ? ' recipe' : ' recipes'))); bookBody.appendChild(h);
-      if (q && searchCats.length) bookBody.appendChild(el('p', 'f-hint', 'In any of: ' + searchCats.slice().sort(cmp).join(', ')));
-      if (!hits.length) bookBody.appendChild(emptyBox(q ? 'No recipes match that. Try a shorter word, or remove a category.' : 'No recipes in ' + (searchCats.length > 1 ? 'those categories' : 'that category') + ' yet.'));
+      const h = el('h2', 'filter-title', q ? 'Results for \u201c' + q + '\u201d' : searchCats.length ? 'Recipes in ' + searchCats.slice().sort(cmp).join(' or ') : 'Recipes I can make'); h.appendChild(el('small', null, hits.length + (hits.length === 1 ? ' recipe' : ' recipes'))); bookBody.appendChild(h);
+      const hintParts = [];
+      if (q && searchCats.length) hintParts.push('In any of: ' + searchCats.slice().sort(cmp).join(', '));
+      if (onlyHave) hintParts.push('Only recipes where every ingredient is ticked in your pantry and refrigerator');
+      if (hintParts.length) bookBody.appendChild(el('p', 'f-hint', hintParts.join('. ') + '.'));
+      if (!hits.length) bookBody.appendChild(emptyBox(onlyHave ? (pantryKeys.length ? 'No recipes match yet. Tick more items in My Kitchen, or untick the box to see everything.' : 'Your pantry and refrigerator are empty. Tick what you have in My Kitchen first.') : q ? 'No recipes match that. Try a shorter word, or remove a category.' : 'No recipes in ' + (searchCats.length > 1 ? 'those categories' : 'that category') + ' yet.'));
       else {
         const w = el('div', 'bb-list');
         hits.forEach(x => {
@@ -1754,6 +1894,360 @@
     return c;
   }
 
+  /* ===== Shopping list, This Week, and the Card Pack randomizer ===== */
+  const PACK_ART = [
+    { id: 'classic', name: 'Classic Green', p1: '#4a8a50', p2: '#1d4424', pa: '#f7e7b4', pi: '#fdf9ee', pt: '#cc4742' },
+    { id: 'ballpark', name: 'Ballpark Navy', p1: '#3b82a0', p2: '#12394b', pa: '#f1e2b8', pi: '#fdf9ee', pt: '#cc4742' },
+    { id: 'fastball', name: 'Fastball Red', p1: '#e5685f', p2: '#962622', pa: '#fdf1d0', pi: '#ffffff', pt: '#1d4a5c' },
+    { id: 'gold', name: 'Gold Glove', p1: '#f0d27a', p2: '#b78a22', pa: '#23401f', pi: '#2a2208', pt: '#23401f' },
+    { id: 'vintage', name: 'Vintage Cream', p1: '#f6ead0', p2: '#d6bd86', pa: '#7a5a14', pi: '#4b3608', pt: '#cc4742' },
+    { id: 'night', name: 'Night Game', p1: '#2f4066', p2: '#0e1424', pa: '#ffd86b', pi: '#f2f5ff', pt: '#cc4742' }
+  ];
+  const artOf = id => PACK_ART.find(a => a.id === id) || PACK_ART[0];
+  const cleanStr = (s, n) => String(s == null ? '' : s).slice(0, n);
+  const cleanList = (v, f) => Array.isArray(v) ? v.map(f).filter(Boolean) : [];
+  function cleanPack(p) {
+    if (!p || typeof p !== 'object') return null;
+    const n = Math.round(+p.count), d = Math.round(+p.maxDiff);
+    return { id: cleanStr(p.id, 40) || newPackId(), name: cleanStr(p.name, 28).trim() || 'My Pack', count: n >= 1 && n <= 7 ? n : 3, maxDiff: d >= 1 && d <= 5 ? d : 5,
+      kitchenOnly: !!p.kitchenOnly, art: PACK_ART.some(a => a.id === p.art) ? p.art : PACK_ART[0].id };
+  }
+  const cleanPacks = v => cleanList(v, cleanPack).slice(0, 12);
+  const cleanWeek = v => cleanList(v, m => m && typeof m.rid === 'string' ? { rid: cleanStr(m.rid, 80), title: cleanStr(m.title, 150) } : null).slice(0, 60);
+  const cleanShop = v => cleanList(v, it => it && typeof it.key === 'string' && typeof it.name === 'string'
+    ? { key: cleanStr(it.key, 80), name: cleanStr(it.name, 80), checked: !!it.checked, manual: !!it.manual,
+        notes: cleanList(it.notes, x => x && typeof x.r === 'string' ? { r: cleanStr(x.r, 80), t: cleanStr(x.t, 150), l: cleanStr(x.l, 150) } : null).slice(0, 8) } : null).slice(0, 300);
+  function newPackId() { return 'p' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5); }
+  let myPacks = cleanPacks(readLS('hp_packs', '[]')), weekMeals = cleanWeek(readLS('hp_week', '[]')), shopItems = cleanShop(readLS('hp_shop', '[]'));
+  function persist(field, value, ls) { if (typeof dbUserReady === 'function' && dbUserReady()) dbSaveUser({ [field]: value }); else writeLS(ls, value); }
+  const savePacks = () => persist('packs', myPacks, 'hp_packs'), saveWeek = () => persist('week', weekMeals, 'hp_week'), saveShop = () => persist('shop', shopItems, 'hp_shop');
+  function confirmBtn(label, sure, fn, cls) {
+    const b = el('button', 'btn-ghost sm ' + (cls || ''), label); b.type = 'button'; let timer = 0;
+    b.addEventListener('click', () => {
+      if (b.classList.contains('warn')) { clearTimeout(timer); fn(); return; }
+      b.classList.add('warn'); b.textContent = sure; timer = setTimeout(() => { b.classList.remove('warn'); b.textContent = label; }, 3500);
+    });
+    return b;
+  }
+
+  /* ---- Shopping list ---- */
+  function missingFor(r) { return ingItems(r).filter(it => !pantryKeys.includes(canonKey(it.n))); }
+  function recipeLineFor(r, it) {
+    const key = canonKey(it.n), lines = r.ingredients || [];
+    for (const line of lines) if (parseIngLine(line).some(n => canonKey(n) === key)) return String(line);
+    const nm = it.n.toLowerCase();
+    return String(lines.find(l => String(l).toLowerCase().includes(nm)) || '');
+  }
+  function addToShopping(recipes) {
+    let added = 0;
+    recipes.forEach(r => missingFor(r).forEach(it => {
+      const key = canonKey(it.n); if (!key) return;
+      let item = shopItems.find(x => x.key === key);
+      if (!item) { const nm = it.n.trim(); item = { key, name: nm.charAt(0).toUpperCase() + nm.slice(1), checked: false, notes: [] }; shopItems.push(item); added++; }
+      if (!item.notes.some(x => x.r === r.id)) item.notes.push({ r: r.id, t: cleanStr(r.title, 150), l: cleanStr(recipeLineFor(r, it), 150) });
+      item.notes = item.notes.slice(0, 8);
+    }));
+    shopItems = shopItems.slice(0, 300); saveShop(); renderShopping(); return added;
+  }
+  /* Typed-in items live only on the shopping list: they are never added to the pantry, recipes or anything else. */
+  function addManualItem(text) {
+    const nm = String(text || '').replace(/\s+/g, ' ').trim().slice(0, 60); if (!nm) return false;
+    if (shopItems.some(i => i.manual && i.name.toLowerCase() === nm.toLowerCase())) { toast('That is already on your list.'); return false; }
+    if (shopItems.length >= 300) { toast('Your list is full. Remove some items first.'); return false; }
+    shopItems.push({ key: 'm' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5), name: nm.charAt(0).toUpperCase() + nm.slice(1), checked: false, manual: true, notes: [] });
+    saveShop(); renderShopping(); return true;
+  }
+  /* Taking a meal off This Week also takes its ingredients off the list (typed-in items stay). */
+  function dropFromShopping(rids) {
+    if (!rids.length) return;
+    const gone = new Set(rids);
+    shopItems.forEach(i => { if (!i.manual) i.notes = i.notes.filter(n => !gone.has(n.r)); });
+    shopItems = shopItems.filter(i => i.manual || i.notes.length);
+    saveShop(); renderShopping();
+  }
+  function renderShopping() {
+    const body = document.getElementById('shopBody'); if (!body) return;
+    const keep = document.getElementById('shopAdd'), draft = keep ? keep.value : '', hadFocus = !!keep && document.activeElement === keep;
+    body.textContent = '';
+    const card = cardEl('i-cart', 'To Buy', false);
+    const form = el('form', 'shop-add'); form.setAttribute('autocomplete', 'off');
+    const inp = el('input'); inp.type = 'text'; inp.id = 'shopAdd'; inp.maxLength = 60; inp.placeholder = 'Add an item (milk, paper towels…)'; inp.setAttribute('aria-label', 'Add an item to your shopping list'); inp.enterKeyHint = 'done'; inp.value = draft;
+    const go = el('button', 'btn-primary sm', 'Add'); go.type = 'submit';
+    form.appendChild(inp); form.appendChild(go);
+    form.addEventListener('submit', e => { e.preventDefault(); if (addManualItem(inp.value)) { const n = document.getElementById('shopAdd'); if (n) { n.value = ''; n.focus(); } } });
+    card.appendChild(form);
+    if (hadFocus) setTimeout(() => { const n = document.getElementById('shopAdd'); if (n) n.focus(); }, 0);
+    if (!shopItems.length) { card.appendChild(emptyBox('Your list is empty. Type in anything you need, or accept a pack in the Planner and whatever you are missing lands here.')); body.appendChild(card); return; }
+    const done = shopItems.filter(i => i.checked).length;
+    card.appendChild(el('p', 'shop-count', (shopItems.length - done) + ' to pick up' + (done ? ' \u00b7 ' + done + ' checked off' : '')));
+    const ul = el('ul', 'shop-list');
+    shopItems.slice().sort((a, b) => (a.checked - b.checked) || cmp(a.name, b.name)).forEach(it => {
+      const li = el('li', 'shop-item' + (it.checked ? ' done' : '')), lab = el('label', 'shop-row'), cb = el('input'); cb.type = 'checkbox'; cb.checked = it.checked;
+      cb.addEventListener('change', () => { it.checked = cb.checked; saveShop(); renderShopping(); });
+      const tx = el('span', 'shop-tx'); tx.appendChild(el('b', null, it.name));
+      if (it.manual) tx.appendChild(el('small', null, 'Added by you'));
+      it.notes.forEach(nt => tx.appendChild(el('small', null, (nt.l ? nt.l + ' \u00b7 ' : '') + nt.t)));
+      lab.appendChild(cb); lab.appendChild(tx); li.appendChild(lab);
+      if (it.manual) {
+        const x = el('button', 'week-x'); x.type = 'button'; x.setAttribute('aria-label', 'Remove ' + it.name + ' from the list'); x.appendChild(svgUse('i-x'));
+        x.addEventListener('click', () => { shopItems = shopItems.filter(s => s !== it); saveShop(); renderShopping(); }); li.appendChild(x);
+      }
+      ul.appendChild(li);
+    });
+    card.appendChild(ul);
+    const acts = el('div', 'shop-acts');
+    if (done) acts.appendChild(confirmBtn('Remove checked items', 'Tap again to remove', () => { shopItems = shopItems.filter(i => !i.checked); saveShop(); renderShopping(); }));
+    acts.appendChild(confirmBtn('Clear list', 'Tap again to clear', () => { shopItems = []; saveShop(); renderShopping(); }));
+    card.appendChild(acts); body.appendChild(card);
+  }
+
+  /* ---- This Week ---- */
+  function addToWeek(recipes) {
+    let n = 0;
+    recipes.forEach(r => { if (!weekMeals.some(m => m.rid === r.id)) { weekMeals.push({ rid: r.id, title: cleanStr(r.title, 150) }); n++; } });
+    weekMeals = weekMeals.slice(-60); saveWeek(); return n;
+  }
+  function renderWeek(body) {
+    const card = cardEl('i-diamond', 'This Week', false);
+    if (!weekMeals.length) {
+      card.appendChild(emptyBox('No meals planned yet. Rip a pack in the Randomizer tab and accept it to fill your week.'));
+      const go = el('button', 'btn-primary sm', 'Open the Randomizer'); go.type = 'button'; go.style.marginTop = '14px';
+      go.addEventListener('click', () => { plannerTab = 'rand'; renderPlanner(); }); card.appendChild(go);
+    } else {
+      const ul = el('ul', 'week-list');
+      weekMeals.forEach(m => {
+        const li = el('li', 'week-item'), open = el('button', 'week-open', m.title); open.type = 'button';
+        open.addEventListener('click', () => { if (RECIPES.some(r => r.id === m.rid)) openRecipe(m.rid); else toast('That recipe is no longer available.'); });
+        const x = el('button', 'week-x'); x.type = 'button'; x.setAttribute('aria-label', 'Remove ' + m.title + ' from this week'); x.appendChild(svgUse('i-x'));
+        x.addEventListener('click', () => { weekMeals = weekMeals.filter(w => w !== m); saveWeek(); dropFromShopping([m.rid]); renderPlanner(); });
+        li.appendChild(open); li.appendChild(x); ul.appendChild(li);
+      });
+      card.appendChild(ul);
+      const acts = el('div', 'shop-acts'); acts.appendChild(confirmBtn('Clear the week', 'Tap again to clear', () => { const rids = weekMeals.map(m => m.rid); weekMeals = []; saveWeek(); dropFromShopping(rids); renderPlanner(); })); card.appendChild(acts);
+    }
+    body.appendChild(card);
+  }
+
+  /* ---- Pack drawing ---- */
+  const PACK_BODY_CLIP = (() => { const a = []; for (let i = 0; i <= 20; i++) a.push(i * 5 + '% ' + (i % 2 ? 15 : 18) + '%'); a.push('100% 100%', '0% 100%'); return 'polygon(' + a.join(',') + ')'; })();
+  const PACK_FLAP_CLIP = (() => { const a = ['0% 0%', '100% 0%']; for (let i = 20; i >= 0; i--) a.push(i * 5 + '% ' + ((i % 2 ? 15 : 18) / 22 * 100).toFixed(2) + '%'); return 'polygon(' + a.join(',') + ')'; })();
+  const packSummary = p => p.count + (p.count === 1 ? ' meal' : ' meals') + ' · ' + (p.maxDiff >= 5 ? 'any difficulty' : 'up to ' + DIFF_LABELS[p.maxDiff]) + ' · ' + (p.kitchenOnly ? 'my kitchen only' : 'any recipe');
+  function paintPack(pack, p) {
+    const a = artOf(p.art); ['p1', 'p2', 'pa', 'pi', 'pt'].forEach(k => pack.style.setProperty('--' + k, a[k]));
+    pack.querySelector('.pack-name').textContent = p.name; pack.querySelector('.pack-sub').textContent = p.count + (p.count === 1 ? ' card' : ' cards') + ' inside';
+  }
+  function makePack(p, live) {
+    const pack = el('div', 'pack');
+    const peek = el('div', 'pack-peek'); peek.appendChild(el('i')); peek.appendChild(el('i')); peek.appendChild(el('i')); pack.appendChild(peek);
+    const body = el('div', 'pack-body'); body.style.clipPath = PACK_BODY_CLIP;
+    const face = el('div', 'pack-face'), badge = el('div', 'pack-badge'), lg = el('img'); lg.src = markSrc; lg.alt = ''; badge.appendChild(lg);
+    face.appendChild(badge); face.appendChild(el('div', 'pack-name')); face.appendChild(el('div', 'pack-ribbon', 'Recipe Cards')); face.appendChild(el('div', 'pack-sub'));
+    body.appendChild(face); pack.appendChild(body);
+    const flap = el(live ? 'button' : 'div', 'pack-flap' + (live ? ' wig' : ''));
+    if (live) { flap.type = 'button'; flap.setAttribute('aria-label', 'Open the pack. Swipe across the top, or tap it.'); }
+    flap.style.clipPath = PACK_FLAP_CLIP; flap.appendChild(el('span', 'pack-flap-bg')); flap.appendChild(el('span', 'pack-flap-txt', 'Home Plate Recipe Co.')); pack.appendChild(flap);
+    paintPack(pack, p); return pack;
+  }
+  const rz = { state: 'shelf', pack: null, draw: [], seen: new Set(), edit: null, done: null, busy: false };
+  function poolFor(p) { const have = new Set(pantryKeys); return RECIPES.filter(r => diffFor(r) <= p.maxDiff && (!p.kitchenOnly || canMake(r, have))); }
+  function shuffle(a) { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+  function pickDraw(p) {
+    const pool = poolFor(p), want = Math.min(p.count, pool.length);
+    let fresh = pool.filter(r => !rz.seen.has(r.id));
+    if (fresh.length < want) { rz.seen = new Set(); fresh = pool; }   // seen everything: start the deck over
+    const out = shuffle(fresh).slice(0, want); out.forEach(r => rz.seen.add(r.id)); return out;
+  }
+
+  /* ---- Fireworks ---- */
+  function burst(fx, x, y) {
+    const cols = ['#cc4742', '#f1e2b8', '#2e5132', '#fdf9ee', '#e8c766', '#1d4a5c', '#ffd86b'];
+    const flash = el('span', 'fx-flash'); flash.style.left = x + 'px'; flash.style.top = y + 'px'; fx.appendChild(flash);
+    flash.animate([{ transform: 'scale(.2)', opacity: 1 }, { transform: 'scale(1.7)', opacity: 0 }], { duration: 560, easing: 'ease-out' }).onfinish = () => flash.remove();
+    for (let i = 0; i < 12; i++) {
+      const ray = el('span', 'fx-ray'), ang = -170 + i * (160 / 11) + (Math.random() * 8 - 4);
+      ray.style.left = x + 'px'; ray.style.top = y + 'px'; fx.appendChild(ray);
+      ray.animate([{ transform: 'rotate(' + (ang + 90) + 'deg) translateY(8px) scaleY(.2)', opacity: 1 }, { transform: 'rotate(' + (ang + 90) + 'deg) translateY(110px) scaleY(1.3)', opacity: 0 }], { duration: 650, easing: 'cubic-bezier(.1,.7,.3,1)' }).onfinish = () => ray.remove();
+    }
+    for (let i = 0; i < 48; i++) {
+      const kind = i % 3 === 0 ? 'ball' : i % 3 === 1 ? 'star' : 'conf', s = el('span', 'fx-p fx-' + kind);
+      if (kind === 'star') { s.textContent = '★'; s.style.color = cols[i % cols.length]; } else if (kind === 'conf') s.style.background = cols[i % cols.length];
+      s.style.left = x + 'px'; s.style.top = y + 'px'; fx.appendChild(s);
+      const ang = (-165 + Math.random() * 150) * Math.PI / 180, sp = 90 + Math.random() * 170, dx = Math.cos(ang) * sp, dy = Math.sin(ang) * sp, rot = (Math.random() * 720 - 360);
+      s.animate([{ transform: 'translate(0,0) rotate(0) scale(1)', opacity: 1 }, { transform: 'translate(' + dx + 'px,' + (dy + 120) + 'px) rotate(' + rot + 'deg) scale(.5)', opacity: 0 }],
+        { duration: 900 + Math.random() * 700, easing: 'cubic-bezier(.12,.75,.3,1)', delay: Math.random() * 90 }).onfinish = () => s.remove();
+    }
+  }
+  function openPack(stage, pack, flap, startTransform) {
+    rz.busy = true; rz.draw = pickDraw(rz.pack);
+    const reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+    flap.classList.remove('wig');
+    if (!reduce) {
+      const fx = stage.querySelector('.rz-fx'), sr = stage.getBoundingClientRect(), pr = pack.getBoundingClientRect();
+      flap.animate([{ transform: startTransform || 'none', opacity: 1 }, { transform: 'translate(120%, -110%) rotate(40deg)', opacity: 0 }], { duration: 650, easing: 'cubic-bezier(.3,.05,.6,1)', fill: 'forwards' });
+      pack.querySelector('.pack-body').animate([{ transform: 'scale(1)' }, { transform: 'scale(1.07)' }, { transform: 'scale(1)' }], { duration: 460, delay: 90, easing: 'ease-out' });
+      pack.querySelectorAll('.pack-peek i').forEach((c, i) => c.animate([{ transform: c.style.transform || getComputedStyle(c).transform, opacity: 1 }, { transform: 'translateY(' + (-70 - i * 8) + '%) rotate(' + (i * 6 - 6) + 'deg)', opacity: 1 }], { duration: 700, delay: 120 + i * 60, easing: 'cubic-bezier(.2,.9,.3,1)', fill: 'forwards' }));
+      burst(fx, pr.left - sr.left + pr.width / 2, pr.top - sr.top + pr.height * 0.16);
+    }
+    setTimeout(() => { rz.busy = false; rz.state = 'reveal'; renderPlanner(); }, reduce ? 120 : 1350);
+  }
+  function wireTear(stage, pack, flap) {
+    let sx = 0, drag = false, moved = 0, done = false;
+    const finish = () => { if (done) return; done = true; drag = false; flap.classList.remove('drag'); openPack(stage, pack, flap, flap.style.transform); };
+    flap.addEventListener('pointerdown', e => { if (done) return; drag = true; sx = e.clientX; moved = 0; try { flap.setPointerCapture(e.pointerId); } catch (x) {} flap.classList.add('drag'); });
+    flap.addEventListener('pointermove', e => {
+      if (!drag || done) return;
+      const dx = e.clientX - sx, w = pack.getBoundingClientRect().width, c = Math.max(-w * 0.9, Math.min(w * 0.9, dx)); moved = Math.max(moved, Math.abs(dx));
+      flap.style.transform = 'translateX(' + c + 'px) rotate(' + (c / w * 14) + 'deg)';
+      if (Math.abs(dx) >= w * 0.55) finish();
+    });
+    flap.addEventListener('pointerup', () => { if (!drag || done) return; drag = false; flap.classList.remove('drag'); if (moved < 8) finish(); else flap.style.transform = ''; });
+    flap.addEventListener('pointercancel', () => { drag = false; flap.classList.remove('drag'); if (!done) flap.style.transform = ''; });
+    flap.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); finish(); } });
+  }
+
+  /* ---- Randomizer screens ---- */
+  function startOpen(p) { rz.pack = p; rz.seen = new Set(); rz.draw = []; rz.state = 'open'; renderPlanner(); }
+  function startEdit(p) {
+    rz.edit = p ? Object.assign({}, p) : { id: null, name: '', count: 3, maxDiff: 5, kitchenOnly: false, art: PACK_ART[myPacks.length % PACK_ART.length].id };
+    rz.state = 'edit'; renderPlanner();
+  }
+  function rzShelf(body) {
+    body.appendChild(el('p', 'rz-intro', 'Each pack is a saved set of rules. Tap one to rip it open and see which recipes come out.'));
+    if (!myPacks.length) {
+      const c = cardEl('i-diamond', 'No packs yet', false); c.appendChild(emptyBox('Build your own pack, or start with a ready-made one.'));
+      const row = el('div', 'rz-actions');
+      const mk = el('button', 'btn-primary sm', 'Create a pack'); mk.type = 'button'; mk.addEventListener('click', () => startEdit(null));
+      const st = el('button', 'btn-ghost', 'Add a starter pack'); st.type = 'button';
+      st.addEventListener('click', () => { myPacks.push({ id: newPackId(), name: 'Weeknight Pack', count: 3, maxDiff: 3, kitchenOnly: false, art: 'classic' }); savePacks(); renderPlanner(); });
+      row.appendChild(mk); row.appendChild(st); c.appendChild(row); body.appendChild(c); return;
+    }
+    const grid = el('div', 'pack-shelf');
+    myPacks.forEach(p => {
+      const t = el('div', 'pack-tile'), open = el('button', 'pack-open'); open.type = 'button'; open.setAttribute('aria-label', 'Open ' + p.name);
+      open.appendChild(makePack(p, false)); open.addEventListener('click', () => startOpen(p)); t.appendChild(open);
+      t.appendChild(el('b', 'pack-tname', p.name)); t.appendChild(el('small', 'pack-tsum', packSummary(p)));
+      const ed = el('button', 'btn-ghost sm', 'Edit'); ed.type = 'button'; ed.addEventListener('click', () => startEdit(p)); t.appendChild(ed); grid.appendChild(t);
+    });
+    body.appendChild(grid);
+    if (myPacks.length < 12) { const add = el('button', 'btn-primary sm', 'New pack'); add.type = 'button'; add.addEventListener('click', () => startEdit(null)); body.appendChild(add); }
+  }
+  function rzEdit(body) {
+    const E = rz.edit, form = el('div', 'form rz-form');
+    form.appendChild(el('h2', 'rz-h', E.id ? 'Edit pack' : 'New pack'));
+    const prev = el('div', 'rz-prev'), pk = makePack(E, false); prev.appendChild(pk); form.appendChild(prev);
+    const paint = () => paintPack(pk, Object.assign({}, E, { name: E.name.trim() || 'My Pack' }));
+    const wrapF = (label, ctl, hint) => { const f = el('div', 'f'); const l = el('label', 'lab', label); f.appendChild(l); f.appendChild(ctl); if (hint) f.appendChild(el('p', 'f-hint', hint)); form.appendChild(f); return l; };
+    const nm = el('input'); nm.type = 'text'; nm.id = 'rzName'; nm.maxLength = 28; nm.placeholder = 'e.g. Weeknight Pack'; nm.value = E.name; nm.autocomplete = 'off';
+    nm.addEventListener('input', () => { E.name = nm.value; paint(); }); wrapF('Pack name', nm).setAttribute('for', 'rzName');
+    // art
+    const art = el('div', 'art-picks'); art.setAttribute('role', 'radiogroup'); art.setAttribute('aria-label', 'Pack design');
+    const artBtns = PACK_ART.map(a => {
+      const b = el('button', 'art-pick'); b.type = 'button'; b.setAttribute('role', 'radio'); b.dataset.id = a.id;
+      b.appendChild(makePack({ name: 'Pack', count: 5, art: a.id }, false)); b.appendChild(document.createTextNode(a.name));
+      b.addEventListener('click', () => { E.art = a.id; mark(); paint(); }); art.appendChild(b); return b;
+    });
+    const mark = () => artBtns.forEach(b => { const on = b.dataset.id === E.art; b.classList.toggle('on', on); b.setAttribute('aria-checked', on); }); mark();
+    wrapF('Pack design', art);
+    // count
+    const nums = el('div', 'num-picks'); nums.setAttribute('role', 'radiogroup'); nums.setAttribute('aria-label', 'Number of meals');
+    const numBtns = [1, 2, 3, 4, 5, 6, 7].map(n => { const b = el('button', 'num-pick', String(n)); b.type = 'button'; b.setAttribute('role', 'radio'); b.addEventListener('click', () => { E.count = n; markN(); paint(); }); nums.appendChild(b); return b; });
+    const markN = () => numBtns.forEach((b, i) => { const on = i + 1 === E.count; b.classList.toggle('on', on); b.setAttribute('aria-checked', on); }); markN();
+    wrapF('Meals per pack', nums, 'How many recipe cards come out of each pack.');
+    // difficulty
+    const dwrap = el('div'), dp = el('div', 'diff-pick'); dp.setAttribute('role', 'radiogroup'); dp.setAttribute('aria-label', 'Max difficulty');
+    const dl = el('span', 'rz-dlabel');
+    const dBtns = [1, 2, 3, 4, 5].map(n => { const b = el('button'); b.type = 'button'; b.setAttribute('role', 'radio'); b.setAttribute('aria-label', n + ' of 5, ' + DIFF_LABELS[n]); const ball = svgUse('i-ball'); ball.classList.add('ball'); b.appendChild(ball); b.addEventListener('click', () => { E.maxDiff = n; markD(); }); dp.appendChild(b); return b; });
+    const markD = () => { dBtns.forEach((b, i) => { const on = i + 1 <= E.maxDiff; b.firstChild.classList.toggle('on', on); b.setAttribute('aria-checked', i + 1 === E.maxDiff); }); dl.textContent = E.maxDiff >= 5 ? 'Hall of Fame: any difficulty' : 'Up to ' + DIFF_LABELS[E.maxDiff]; paint(); }; markD();
+    dwrap.appendChild(dp); dwrap.appendChild(dl); wrapF('Max difficulty', dwrap, 'Recipes harder than this stay out of the pack. Recipes with no rating still count.');
+    // kitchen
+    const kr = el('label', 'rookie-row'), kc = el('input'); kc.type = 'checkbox'; kc.checked = E.kitchenOnly;
+    const kt = el('span'); kt.appendChild(el('b', null, 'Only recipes I can make')); kt.appendChild(el('small', null, 'Every ingredient has to be ticked in My Kitchen. Left unticked, any recipe can come out.'));
+    kr.appendChild(kc); kr.appendChild(kt); kc.addEventListener('change', () => { E.kitchenOnly = kc.checked; }); form.appendChild(kr);
+    const err = el('p', 'imp-status err'); form.appendChild(err);
+    const acts = el('div', 'rz-actions');
+    const sv = el('button', 'btn-primary sm', 'Save pack'); sv.type = 'button';
+    sv.addEventListener('click', () => {
+      const clean = cleanPack(Object.assign({}, E, { id: E.id || newPackId(), name: E.name.trim() }));
+      if (!E.name.trim()) { err.textContent = 'Give your pack a name.'; nm.focus(); return; }
+      const i = myPacks.findIndex(x => x.id === clean.id); if (i > -1) myPacks[i] = clean; else myPacks.push(clean);
+      myPacks = myPacks.slice(0, 12); savePacks(); rz.state = 'shelf'; renderPlanner();
+    });
+    const cn = el('button', 'btn-ghost', 'Cancel'); cn.type = 'button'; cn.addEventListener('click', () => { rz.state = 'shelf'; renderPlanner(); });
+    acts.appendChild(sv); acts.appendChild(cn);
+    if (E.id) acts.appendChild(confirmBtn('Delete pack', 'Tap again to delete', () => { myPacks = myPacks.filter(x => x.id !== E.id); savePacks(); rz.state = 'shelf'; renderPlanner(); }));
+    form.appendChild(acts); body.appendChild(form);
+  }
+  function rzBack() { const b = el('button', 'btn-ghost sm', 'Back to my packs'); b.type = 'button'; b.addEventListener('click', () => { rz.state = 'shelf'; renderPlanner(); }); return b; }
+  function rzOpen(body) {
+    const p = rz.pack; if (!p) { rz.state = 'shelf'; return renderPlanner(); }
+    const n = poolFor(p).length;
+    const stage = el('div', 'rz-stage'), fx = el('div', 'rz-fx'); stage.appendChild(fx);
+    const pack = makePack(p, n > 0); stage.appendChild(pack);
+    if (n > 0) {
+      stage.appendChild(el('p', 'rz-meta', n + (n === 1 ? ' recipe matches' : ' recipes match') + ' · ' + packSummary(p)));
+      const h = el('p', 'rz-hint'); h.appendChild(document.createTextNode('Swipe across the top to open ')); h.appendChild(el('span', null, '➜')); stage.appendChild(h);
+      wireTear(stage, pack, pack.querySelector('.pack-flap'));
+    } else {
+      pack.classList.add('empty');
+      stage.appendChild(el('p', 'rz-meta', 'No recipes match this pack right now. ' + (p.kitchenOnly ? 'Tick more items in My Kitchen, or edit the pack to allow any recipe.' : 'Edit the pack to allow harder recipes.')));
+    }
+    body.appendChild(stage);
+    const row = el('div', 'rz-actions'); row.style.justifyContent = 'center'; row.appendChild(rzBack());
+    const ed = el('button', 'btn-ghost sm', 'Edit pack'); ed.type = 'button'; ed.addEventListener('click', () => startEdit(p)); row.appendChild(ed); body.appendChild(row);
+  }
+  function acceptDraw() {
+    const cards = rz.draw, name = rz.pack ? rz.pack.name : 'Pack';
+    const w = addToWeek(cards), s = addToShopping(cards);
+    rz.done = { meals: cards.length, week: w, items: s, name }; rz.draw = []; rz.seen = new Set(); rz.state = 'done'; renderPlanner();
+    toast('Added ' + w + ' meal' + (w === 1 ? '' : 's') + ' to This Week and ' + s + ' item' + (s === 1 ? '' : 's') + ' to your shopping list.');
+  }
+  function rzReveal(body) {
+    const p = rz.pack, cards = rz.draw;
+    body.appendChild(el('h2', 'rz-h', cards.length ? 'Your pull' : 'Empty pack'));
+    body.appendChild(el('p', 'rz-intro', cards.length ? cards.length + (cards.length === 1 ? ' card' : ' cards') + ' from ' + p.name + '. Keep them, or rip another pack.' : 'Nothing matched this pack.'));
+    if (cards.length) {
+      const grid = el('div', 'bb-list');
+      cards.forEach((r, i) => {
+        const slot = el('div', 'rz-slot'), cell = cellWrap(bbCard(r, false)); cell.classList.add('deal'); cell.style.animationDelay = (i * 140) + 'ms'; slot.appendChild(cell);
+        const miss = missingFor(r), need = el('p', 'rz-need' + (miss.length ? '' : ' ok'));
+        if (!miss.length) need.appendChild(el('b', null, 'You have everything.'));
+        else { need.appendChild(el('b', null, 'Need ' + miss.length + ': ')); need.appendChild(document.createTextNode(miss.slice(0, 3).map(m => m.n).join(', ') + (miss.length > 3 ? ' +' + (miss.length - 3) + ' more' : ''))); }
+        slot.appendChild(need); grid.appendChild(slot);
+      });
+      body.appendChild(grid);
+      const keys = new Set(); cards.forEach(r => missingFor(r).forEach(it => keys.add(canonKey(it.n))));
+      const sum = el('div', 'rz-sum');
+      sum.appendChild(el('p', null, 'Accepting adds these meals to This Week and ' + (keys.size ? keys.size + ' missing ingredient' + (keys.size === 1 ? '' : 's') + ' to your shopping list.' : 'nothing new to your shopping list, since you have it all.')));
+      if (cards.length < p.count) sum.appendChild(el('p', null, 'Only ' + cards.length + ' recipe' + (cards.length === 1 ? '' : 's') + ' matched this pack.'));
+      body.appendChild(sum);
+    }
+    const row = el('div', 'rz-actions');
+    if (cards.length) { const ac = el('button', 'btn-primary sm', 'Accept'); ac.type = 'button'; ac.addEventListener('click', acceptDraw); row.appendChild(ac); }
+    const rip = el('button', 'btn-ghost', 'Rip another pack'); rip.type = 'button'; rip.addEventListener('click', () => { rz.draw = []; rz.state = 'open'; renderPlanner(); window.scrollTo(0, 0); }); row.appendChild(rip);
+    row.appendChild(rzBack()); body.appendChild(row);
+  }
+  function rzDone(body) {
+    const d = rz.done || { meals: 0, week: 0, items: 0, name: '' }, c = cardEl('i-check', 'Pack accepted', true), w = el('div', 'rz-done');
+    w.appendChild(el('div', 'big', d.meals + (d.meals === 1 ? ' meal' : ' meals') + ' locked in'));
+    w.appendChild(el('p', 'rz-intro', d.week + ' added to This Week. ' + (d.items ? d.items + ' new item' + (d.items === 1 ? '' : 's') + ' on your shopping list.' : 'Nothing new needed for your shopping list.'))); c.appendChild(w);
+    const row = el('div', 'rz-actions');
+    const sh = el('button', 'btn-primary sm', 'View shopping list'); sh.type = 'button'; sh.addEventListener('click', () => showView('shopping'));
+    const wk = el('button', 'btn-ghost', 'See This Week'); wk.type = 'button'; wk.addEventListener('click', () => { plannerTab = 'week'; rz.state = 'shelf'; renderPlanner(); });
+    const more = el('button', 'btn-ghost', 'Back to my packs'); more.type = 'button'; more.addEventListener('click', () => { rz.state = 'shelf'; renderPlanner(); });
+    row.appendChild(sh); row.appendChild(wk); row.appendChild(more); c.appendChild(row); body.appendChild(c);
+  }
+  let plannerTab = 'week';
+  function renderPlanner() {
+    const body = document.getElementById('planBody'); if (!body) return;
+    const wc = document.getElementById('weekCount'); if (wc) wc.textContent = weekMeals.length + (weekMeals.length === 1 ? ' meal' : ' meals');
+    if (rz.busy) return;   // never redraw in the middle of the pack-opening animation
+    document.querySelectorAll('#planSeg button').forEach(b => { const on = b.dataset.tab === plannerTab; b.classList.toggle('on', on); b.setAttribute('aria-selected', on); });
+    body.textContent = '';
+    if (plannerTab === 'week') return renderWeek(body);
+    ({ shelf: rzShelf, edit: rzEdit, open: rzOpen, reveal: rzReveal, done: rzDone }[rz.state] || rzShelf)(body);
+  }
+  document.getElementById('planSeg').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; plannerTab = b.dataset.tab; renderPlanner(); });
+
   const _showView = showView;
   showView = function (id) {
     _showView(id);
@@ -1763,6 +2257,8 @@
   renderCategories();
   renderBook();
   renderKitchen();
+  renderPlanner();
+  renderShopping();
 </script>
 <script>
   /* ================= Add Recipe =================
@@ -2300,7 +2796,7 @@
      categories/{slug}  {name}                          read: anyone   write: admin
      tools/{id}         {name, group, order}            read: anyone   write: admin
      recipes/{id}       {title, ..., ownerId, ownerName, visibility}   read: public or owner   write: owner
-     users/{uid}        {displayName, kitchenTools[], pantry[], customCategories[]}   read/write: that user only */
+     users/{uid}        {displayName, kitchenTools[], pantry[], packs[], week[], shop[], customCategories[]}   read/write: that user only */
   const dbUserReady = () => !!(fbDb && CURRENT_USER && CURRENT_USER.uid);
   async function dbSaveUser(fields) {
     if (!dbUserReady()) return;
@@ -2347,14 +2843,75 @@
         kitchenTools = Array.isArray(d.kitchenTools) ? d.kitchenTools : [];
         customCats = Array.isArray(d.customCategories) ? d.customCategories : [];
         pantryKeys = Array.isArray(d.pantry) ? d.pantry.filter(x => typeof x === 'string') : [];
+        myPacks = cleanPacks(d.packs); weekMeals = cleanWeek(d.week); shopItems = cleanShop(d.shop);
         if (!us.exists()) A.setDoc(A.doc(fbDb, 'users', u.uid), { displayName: u.displayName || '', createdAt: Date.now() }, { merge: true }).catch(() => {});
       } else {
         kitchenTools = readLS('hp_kitchen_tools', '[]'); customCats = loadCustom(); pantryKeys = readLS('hp_pantry', '[]');
+        myPacks = cleanPacks(readLS('hp_packs', '[]')); weekMeals = cleanWeek(readLS('hp_week', '[]')); shopItems = cleanShop(readLS('hp_shop', '[]'));
       }
     } catch (e) { console.error(e); }
     if (currentRecipe && !RECIPES.some(r => r.id === currentRecipe)) { currentRecipe = null; if (document.getElementById('recipe').classList.contains('active')) showView('book'); }
-    renderCategories(); renderBook(); renderKitchen(); if (currentRecipe) renderRecipe();
+    renderCategories(); renderBook(); renderKitchen(); renderPlanner(); renderShopping(); if (currentRecipe) renderRecipe();
     refreshTidyBtn();
+    if (u && seq === loadSeq) maybeOfferGuestImport(u);
+  }
+
+  /* ===== Guest data: offer to copy what someone set up before signing in ===== */
+  function guestSnapshot() {
+    return {
+      tools: readLS('hp_kitchen_tools', '[]').filter(id => typeof id === 'string' && toolById(id)),
+      pantry: readLS('hp_pantry', '[]').filter(k => typeof k === 'string'),
+      cats: loadCustom().filter(n => typeof n === 'string' && n.trim()),
+      packs: cleanPacks(readLS('hp_packs', '[]')), week: cleanWeek(readLS('hp_week', '[]')), shop: cleanShop(readLS('hp_shop', '[]'))
+    };
+  }
+  const guestCount = g => g.tools.length + g.pantry.length + g.cats.length + g.packs.length + g.week.length + g.shop.length;
+  function guestSummary(g) {
+    const s = (n, one, many) => n ? n + ' ' + (n === 1 ? one : many) : '';
+    return [s(g.tools.length, 'kitchen tool', 'kitchen tools'), s(g.pantry.length, 'pantry or refrigerator item', 'pantry and refrigerator items'), s(g.packs.length, 'pack', 'packs'),
+      s(g.week.length, 'planned meal', 'planned meals'), s(g.shop.length, 'shopping list item', 'shopping list items'), s(g.cats.length, 'custom category', 'custom categories')].filter(Boolean).join(', ');
+  }
+  function mergeGuest(g) {
+    kitchenTools = [...new Set(kitchenTools.concat(g.tools))];
+    pantryKeys = [...new Set(pantryKeys.concat(g.pantry))];
+    const haveCat = new Set(customCats.map(n => n.toLowerCase())); g.cats.forEach(n => { if (!haveCat.has(n.toLowerCase())) { customCats.push(n); haveCat.add(n.toLowerCase()); } });
+    g.packs.forEach(pk => { if (!myPacks.some(x => x.id === pk.id)) myPacks.push(pk); }); myPacks = myPacks.slice(0, 12);
+    g.week.forEach(m => { if (!weekMeals.some(x => x.rid === m.rid)) weekMeals.push(m); }); weekMeals = weekMeals.slice(-60);
+    g.shop.forEach(it => {
+      if (it.manual) { if (!shopItems.some(x => x.manual && x.name.toLowerCase() === it.name.toLowerCase())) shopItems.push(it); return; }
+      const ex = shopItems.find(x => !x.manual && x.key === it.key);
+      if (!ex) shopItems.push(it); else it.notes.forEach(nt => { if (!ex.notes.some(x => x.r === nt.r)) ex.notes.push(nt); });
+    });
+    shopItems = cleanShop(shopItems);
+  }
+  function showGuestDialog(u, g) {
+    const mark = () => { try { localStorage.setItem('hp_guest_asked_' + u.uid, '1'); } catch (e) {} };
+    const ov = document.createElement('div'); ov.className = 'gm-overlay'; ov.id = 'guestDlg';
+    const box = document.createElement('div'); box.className = 'gm-box'; box.setAttribute('role', 'dialog'); box.setAttribute('aria-modal', 'true'); box.setAttribute('aria-labelledby', 'gmTitle');
+    const h = document.createElement('h2'); h.id = 'gmTitle'; h.textContent = 'Copy your guest setup?';
+    const p1 = document.createElement('p'); p1.textContent = 'Before you signed in, you set up: ';
+    const lst = document.createElement('span'); lst.className = 'gm-list'; lst.textContent = guestSummary(g) + '.'; p1.appendChild(lst);
+    const p2 = document.createElement('p'); p2.className = 'gm-small'; p2.textContent = 'Copy it into your account and it will sync everywhere you sign in, merged with anything already there. If you skip, it stays on this device only and won’t show while you’re signed in.';
+    const acts = document.createElement('div'); acts.className = 'gm-acts';
+    const yes = document.createElement('button'); yes.type = 'button'; yes.className = 'btn-primary sm'; yes.textContent = 'Copy it to my account';
+    const no = document.createElement('button'); no.type = 'button'; no.className = 'btn-ghost'; no.textContent = 'No thanks';
+    const close = () => { document.removeEventListener('keydown', onKey); ov.remove(); };
+    const onKey = e => { if (e.key === 'Escape') close(); };   // Escape = ask me again next time
+    yes.addEventListener('click', () => {
+      if (!dbUserReady() || CURRENT_USER.uid !== u.uid) { close(); return; }
+      mergeGuest(g);
+      dbSaveUser({ kitchenTools, pantry: pantryKeys, packs: myPacks, week: weekMeals, shop: shopItems, customCategories: customCats });
+      mark(); close(); renderCategories(); renderBook(); renderKitchen(); renderPlanner(); renderShopping(); toast('Copied to your account.');
+    });
+    no.addEventListener('click', () => { mark(); close(); });
+    acts.appendChild(yes); acts.appendChild(no);
+    box.appendChild(h); box.appendChild(p1); box.appendChild(p2); box.appendChild(acts); ov.appendChild(box); document.body.appendChild(ov);
+    document.addEventListener('keydown', onKey); yes.focus();
+  }
+  function maybeOfferGuestImport(u) {
+    if (!u || !dbUserReady() || document.getElementById('guestDlg')) return;
+    try { if (localStorage.getItem('hp_guest_asked_' + u.uid) === '1') return; } catch (e) { return; }
+    const g = guestSnapshot(); if (guestCount(g)) showGuestDialog(u, g);
   }
 
   /* Admin only (rules enforce it): loads categories, tools and the starter recipe. Safe to run twice. */
@@ -2406,7 +2963,7 @@
   /* ===== Versioning / cache-busting =====
      Bump APP_VERSION on every upload. Running copies compare themselves to the
      live index.html (fetched with no-store) and reload once if it differs. */
-  const APP_VERSION = '2026-11-12.15';
+  const APP_VERSION = '2026-11-12.20';
   (function () {
     const label = document.getElementById('appVer');
     if (label) label.textContent = 'Home Plate v' + APP_VERSION;
