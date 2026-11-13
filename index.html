@@ -601,6 +601,30 @@
   #acctAction { margin-top: 14px; }
   #acctAction .btn-primary { width: auto; }
   .menu button[hidden] { display: none; }
+  .profile-btn { position: relative; }
+  .mdot { position: absolute; top: 2px; right: 2px; width: 13px; height: 13px; border-radius: 50%; background: var(--red); border: 2px solid var(--cream); }
+  .mdot[hidden] { display: none; }
+  .mbadge { margin-left: auto; background: var(--red); color: #fff; border-radius: 999px; min-width: 22px; height: 22px; padding: 0 7px; font-size: 13px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; }
+  .mbadge[hidden] { display: none; }
+  .mail-row { display: block; width: 100%; text-align: left; background: var(--card); border: 1.5px solid var(--line); border-radius: 14px; padding: 12px 14px; margin-bottom: 10px; font-family: inherit; color: var(--ink); cursor: pointer; }
+  .mail-row.unread { border-color: var(--red); background: #fff8ee; }
+  .mail-row:focus-visible { outline: 2px solid var(--navy); outline-offset: 2px; }
+  .mail-top { display: flex; justify-content: space-between; gap: 8px; font-size: 13px; color: var(--muted); }
+  .mail-top b { color: var(--navy); font-size: 14px; }
+  .mail-title { font-size: 17px; font-weight: 700; color: var(--navy); margin: 3px 0 2px; }
+  .mail-snip { font-size: 14px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .mail-dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; background: var(--red); margin-right: 6px; }
+  .mail-meta { font-size: 14px; color: var(--muted); margin: 0 0 12px; }
+  .mail-note { margin: 0 0 16px; padding: 10px 14px; border-left: 4px solid var(--red); background: #fff6e5; border-radius: 0 10px 10px 0; font-size: 15px; line-height: 1.4; }
+  .mail-acts { display: flex; flex-direction: column; gap: 10px; margin: 18px 0 8px; }
+  .mail-acts .btn-primary, .mail-acts .btn-ghost { width: 100%; margin: 0; }
+  .mail-saved { margin: 0; font-weight: 600; color: var(--green); }
+  .send-lab { display: block; font-size: 13px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--red); margin: 12px 0 5px; }
+  .send-in { width: 100%; border: 1.5px solid var(--line); border-radius: 12px; padding: 11px 12px; font: inherit; font-size: 16px; background: #fff; color: var(--ink); }
+  .send-in:focus { outline: 2px solid var(--navy); outline-offset: 1px; }
+  .send-err { color: var(--red); font-weight: 600; font-size: 14px; margin: 10px 0 0; min-height: 1px; }
+  .send-acts { display: flex; gap: 10px; margin-top: 14px; }
+  .send-acts .btn-primary { flex: 1; width: auto; margin: 0; }
 
   #toast { position: fixed; left: 50%; bottom: calc(var(--nav-h) + 16px); transform: translate(-50%, 16px); background: var(--navy); color: #fff; padding: 10px 16px;
     border-radius: 12px; font-size: 14px; opacity: 0; pointer-events: none; transition: opacity .2s, transform .2s; z-index: 50; max-width: 90vw; text-align: center; }
@@ -870,7 +894,7 @@
         </button>
         <div class="menu" id="profileMenu" role="menu">
           <button role="menuitem" data-go="profile"><svg class="ico"><use href="#i-user"/></svg>My Profile</button>
-          <button role="menuitem" data-go="messages"><svg class="ico"><use href="#i-mail"/></svg>Messages</button>
+          <button role="menuitem" data-go="messages"><svg class="ico"><use href="#i-mail"/></svg>Messages<span class="mbadge" id="mailBadge" hidden></span></button>
           <button role="menuitem" data-go="kitchen"><svg class="ico"><use href="#i-pot"/></svg>My Kitchen</button>
           <button role="menuitem" data-go="myrecipes"><svg class="ico"><use href="#i-whisk"/></svg>My Recipes</button>
           <button role="menuitem" data-go="categories"><svg class="ico"><use href="#i-tag"/></svg>My Categories</button>
@@ -1014,11 +1038,7 @@
         <div class="card"><h2><span class="badge"><svg class="ico"><use href="#i-cap"/></svg></span>Account</h2><div class="label left" id="acctInfo">Profile details will go here.</div><p class="acct-msg" id="acctMsg" role="status"></p><div id="acctAction"></div></div>
       </section>
 
-      <section class="view" id="messages">
-        <h1>Messages</h1>
-        <p class="sub">Your inbox</p>
-        <div class="card"><h2><span class="badge"><svg class="ico"><use href="#i-mail"/></svg></span>Inbox</h2><div class="label left">No messages.</div></div>
-      </section>
+      <section class="view" id="messages"><div id="mailBody"></div></section>
 
       
 
@@ -1074,7 +1094,7 @@
   });
   menu.querySelectorAll('button[data-go]').forEach(item => item.addEventListener('click', () => {
     menu.classList.remove('open');
-    if (item.dataset.go === 'categories' || item.dataset.go === 'myrecipes') openBookTab(item.dataset.go); else showView(item.dataset.go);
+    if (item.dataset.go === 'categories' || item.dataset.go === 'myrecipes') openBookTab(item.dataset.go); else if (item.dataset.go === 'messages') openMail(); else showView(item.dataset.go);
   }));
   document.addEventListener('click', () => menu.classList.remove('open'));
   document.addEventListener('keydown', e => { if (e.key === 'Escape') menu.classList.remove('open'); });
@@ -1352,7 +1372,8 @@
       const q = el('p', 'credit-link'); q.appendChild(document.createTextNode('Source: '));
       const a = el('a', null, hostOf(url) || url); a.href = url; a.target = '_blank'; a.rel = 'noopener noreferrer nofollow'; q.appendChild(a); c.appendChild(q);
     } else if (r.sourceNote && r.sourceName) c.appendChild(el('p', 'credit-link', 'Source: ' + r.sourceNote));
-    if (r.importedFrom) c.appendChild(el('p', 'credit-note', 'Imported with Gemini from ' + (r.importedFrom === 'link' ? 'a web page' : 'photos') + '. See the original for the full recipe and story.'));
+    if (r.importedFrom === 'shared') c.appendChild(el('p', 'credit-note', 'Shared with you through Home Plate.'));
+    else if (r.importedFrom) c.appendChild(el('p', 'credit-note', 'Imported with Gemini from ' + (r.importedFrom === 'link' ? 'a web page' : 'photos') + '. See the original for the full recipe and story.'));
     return c;
   }
 
@@ -1731,15 +1752,15 @@
         b.addEventListener('click', async () => { try { await navigator.share(d.url ? { title: d.title, text: d.text, url: d.url } : { title: d.title, text: d.text }); close(); } catch (e) { /* cancelled */ } });
         list.appendChild(b);
       }
+      if (typeof SHARE_HOOKS.inApp === 'function') {
+        const ia = mk('i-mail', 'Send in Home Plate', 'button', 'btn-ghost'); ia.addEventListener('click', () => { close(); SHARE_HOOKS.inApp(r); }); list.appendChild(ia);
+      }
       const em = mk('i-mail', 'Email', 'a', 'btn-ghost'); em.href = 'mailto:?subject=' + encodeURIComponent(d.url ? d.title + ' (Home Plate recipe)' : d.title) + '&body=' + encodeURIComponent(d.body);
       const sm = mk('i-people', 'Text message', 'a', 'btn-ghost'); sm.href = 'sms:?&body=' + encodeURIComponent(d.body);
       list.appendChild(em); list.appendChild(sm);
       const cp = mk('i-check', d.url ? 'Copy link' : 'Copy recipe text', 'button', 'btn-ghost');
       cp.addEventListener('click', async () => { const ok = await copyText(d.url || d.body); close(); toast(ok ? (d.url ? 'Link copied.' : 'Recipe copied.') : 'Couldn’t copy. Try Email or Text.'); });
       list.appendChild(cp);
-      if (typeof SHARE_HOOKS.inApp === 'function') {
-        const ia = mk('i-user', 'Send in Home Plate', 'button', 'btn-ghost'); ia.addEventListener('click', () => { close(); SHARE_HOOKS.inApp(r); }); list.appendChild(ia);
-      }
     };
     draw(); ov.appendChild(box); document.body.appendChild(ov);
     document.addEventListener('keydown', onKey);
@@ -2455,8 +2476,8 @@
   const addBody = document.getElementById('addBody');
   document.getElementById('addRecipeBtn').addEventListener('click', openAddRecipe);
 
-  function openAddRecipe() {
-    addState = { mode: 'type', cats: [], tool: '', diff: 0, vis: 'private', style: 'classic', rookie: true, photos: [], busy: false, imported: null };
+  function openAddRecipe(pre) {
+    addState = { mode: 'type', cats: [], tool: '', diff: 0, vis: 'private', style: 'classic', rookie: true, photos: [], busy: false, imported: null, prefill: pre || null };
     renderAdd(); showView('addrecipe'); window.scrollTo(0, 0);
   }
 
@@ -2513,14 +2534,16 @@
 
   function renderAdd() {
     const S = addState || (addState = { mode: 'type', cats: [], tool: '', diff: 0, vis: 'private', style: 'classic', rookie: true, photos: [], busy: false, imported: null });
+    const PRE = S.prefill;
+    if (PRE) { S.cats = PRE.categories.slice(); S.tool = PRE.tool || ''; S.diff = PRE.difficulty || 0; S.style = PRE.cardStyle || 'classic'; S.rookie = !!PRE.rookie; S.imported = 'shared'; S.fromMessage = PRE.messageId; S.prefill = null; }
     addBody.textContent = '';
-    addBody.appendChild(backBtn('Recipe Book', () => showView('book')));
-    addBody.appendChild(el('h1', null, 'Add a Recipe'));
+    addBody.appendChild(backBtn(PRE ? 'Messages' : 'Recipe Book', () => PRE ? openMail() : showView('book')));
+    addBody.appendChild(el('h1', null, PRE ? 'Save Shared Recipe' : 'Add a Recipe'));
     if (!(CURRENT_USER && CURRENT_USER.uid)) {
       addBody.appendChild(el('p', 'sub', 'Sign in to add recipes to your Recipe Book.'));
       const b = el('button', 'btn-primary', 'Sign in with Google'); b.type = 'button'; b.addEventListener('click', () => doSignIn()); addBody.appendChild(b); return;
     }
-    addBody.appendChild(el('p', 'sub', 'Type it in, or let Gemini read a link or photos for you.'));
+    addBody.appendChild(el('p', 'sub', PRE ? 'Shared with you. Change anything you like, then save it to My Recipes.' : 'Type it in, or let Gemini read a link or photos for you.'));
     const F = {};
 
     // ---- how to add
@@ -2646,6 +2669,7 @@
     function needCredit() { return S.mode !== 'type' || !!S.imported; }
     function updateCreditReq() {
       const need = needCredit(); cnameF.mark.hidden = csrcF.mark.hidden = !need;
+      if (S.imported === 'shared') { csrcF.mark.hidden = true; credNote.textContent = 'The original creator stays credited on the recipe. The website or source is optional.'; return; }
       credNote.textContent = need
         ? 'Required for recipes from someone else: credit the original creator and website or source. This shows on the recipe.'
         : 'Optional. If this recipe came from someone else, credit them here and it will show on the recipe.';
@@ -2714,7 +2738,7 @@
       if (!steps.length) { err.textContent = 'Add at least one direction.'; F.steps.focus(); return; }
       const badText = cleanCheck([['the recipe name', title], ['the description', F.blurb.value], ['the ingredients', ingredients.join('\n')], ['the directions', steps.join('\n')], ['the creator name', cname], ['the source', srcRaw]]);
       if (badText) { err.textContent = badText; return; }
-      if (needCredit() && (!cname || !srcRaw)) { err.textContent = 'Please credit the original creator and the website or source.'; (cname ? F.csrc : F.cname).focus(); return; }
+      if (needCredit() && (!cname || (!srcRaw && S.imported !== 'shared'))) { err.textContent = 'Please credit the original creator and the website or source.'; (cname ? F.csrc : F.cname).focus(); return; }
       const src = parseSource(srcRaw);
       if (S.mode === 'link' && !src.url) { err.textContent = 'For a link import, the source needs to be the recipe’s web address.'; F.csrc.focus(); return; }
       if (!fbDb || !dbUserReady()) { err.textContent = 'You need to be signed in (and online) to save.'; return; }
@@ -2731,11 +2755,19 @@
         save.textContent = 'Saving…';
         if (typeof ingKeysFor === 'function') { const ik = await ingKeysFor(ingredients); if (ik) rec.ingKeys = ik; }   // pantry names; skipped quietly if Gemini is busy
         await dbApi.setDoc(dbApi.doc(fbDb, 'recipes', id), rec);
+        if (S.fromMessage && typeof markMessageSaved === 'function') markMessageSaved(S.fromMessage, id);
         RECIPES.push(rec); renderBook(); renderCategories(); renderKitchen(); toast('Recipe saved.'); addState = null; openRecipe(id);
       } catch (e) { console.error(e); err.textContent = 'Could not save (' + (e.code || 'error') + '). Check your connection and try again.'; }
       finally { save.disabled = false; save.textContent = saveLabel; }
     });
 
+    if (PRE) {
+      F.title.value = PRE.title; F.blurb.value = PRE.blurb || ''; F.prep.value = PRE.prep || ''; F.cook.value = PRE.cook || ''; F.serv.value = PRE.servings || '';
+      F.ings.value = PRE.ingredients.join('\n'); F.steps.value = PRE.steps.join('\n'); F.tool.value = S.tool;
+      F.cname.value = PRE.sourceName || ''; F.csrc.value = PRE.sourceUrl || PRE.sourceNote || '';
+      F.cname.dataset.lock = F.cname.value ? '1' : ''; F.csrc.dataset.lock = F.csrc.value ? '1' : '';
+      lockNote.textContent = 'Locked: this credit came with the shared recipe, so it stays attached. Starting over clears everything.'; setLocks();
+    }
     drawCats(); drawDiff(); drawThumbs(); setMode(S.mode); updatePreview();
   }
 </script>
@@ -3041,8 +3073,210 @@
     if (currentRecipe && !RECIPES.some(r => r.id === currentRecipe)) { currentRecipe = null; if (document.getElementById('recipe').classList.contains('active')) showView('book'); }
     renderCategories(); renderBook(); renderKitchen(); renderPlanner(); renderShopping(); if (currentRecipe) renderRecipe();
     refreshTidyBtn();
+    if (seq === loadSeq) { if (u) { ensureDirectory(u).then(loadMail); } else { inbox = []; sentBox = []; mailOpenId = null; updateMailBadge(); } }
     if (seq === loadSeq) openPendingShare();
     if (u && seq === loadSeq) maybeOfferGuestImport(u);
+  }
+
+
+  /* ===== In-app messages (mailbox) =====
+     directory/{email} lets a signed-in user find another signed-up user by email (get only, no listing).
+     messages/{id} holds a snapshot of the recipe, so it works for private recipes too.
+     The receiver can save a private copy to My Recipes, or edit it first. */
+  const MAIL_NOTE_MAX = 300;
+  let inbox = [], sentBox = [], mailTab = 'inbox', mailOpenId = null, mailBusy = false, mailAt = 0;
+  const emailKey = e => String(e || '').trim().toLowerCase();
+  const validEmail = e => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e) && e.length <= 254;
+  const mailDate = t => { try { return new Date(t).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }); } catch (e) { return ''; } };
+  const mailReady = () => !!(fbDb && dbApi && CURRENT_USER && CURRENT_USER.uid);
+
+  async function ensureDirectory(u) {
+    if (!u || !u.email || !u.emailVerified || !mailReady()) return;
+    try { await dbApi.setDoc(dbApi.doc(fbDb, 'directory', emailKey(u.email)), { uid: u.uid, displayName: String(u.displayName || 'Chef').slice(0, 80), updatedAt: Date.now() }); }
+    catch (e) { console.error(e); }
+  }
+  function mailIsProfane(m) { return !!(profanityHit(String(m.note || '') + ' ' + String(m.fromName || '')) || recipeIsProfane(m.recipe || {})); }
+  function updateMailBadge() {
+    const n = (CURRENT_USER && CURRENT_USER.uid) ? inbox.filter(m => !m.read).length : 0;
+    const b = $('mailBadge'); if (b) { b.hidden = !n; b.textContent = n > 99 ? '99+' : String(n); }
+    let d = document.getElementById('mailDot');
+    if (!d) { d = document.createElement('span'); d.id = 'mailDot'; d.className = 'mdot'; d.setAttribute('aria-hidden', 'true'); profileBtn.appendChild(d); }
+    d.hidden = !n; profileBtn.setAttribute('aria-label', n ? 'Profile, ' + n + ' unread message' + (n === 1 ? '' : 's') : 'Profile');
+  }
+  async function loadMail() {
+    if (!mailReady() || mailBusy) return;
+    mailBusy = true; const A = dbApi, uid = CURRENT_USER.uid, col = A.collection(fbDb, 'messages');
+    try {
+      const [a, b] = await Promise.all([A.getDocs(A.query(col, A.where('toUid', '==', uid))), A.getDocs(A.query(col, A.where('fromUid', '==', uid)))]);
+      if (!CURRENT_USER || CURRENT_USER.uid !== uid) return;
+      const rows = sn => sn.docs.map(d => Object.assign({ id: d.id }, d.data())).sort((x, y) => (y.createdAt || 0) - (x.createdAt || 0));
+      inbox = rows(a).filter(m => !mailIsProfane(m)); sentBox = rows(b); mailAt = Date.now();
+    } catch (e) { console.error(e); }
+    finally { mailBusy = false; }
+    updateMailBadge(); if ($('messages').classList.contains('active')) renderMail();
+  }
+  function openMail() { mailOpenId = null; renderMail(); showView('messages'); if (mailReady()) loadMail(); }
+  document.addEventListener('visibilitychange', () => { if (!document.hidden && mailReady() && Date.now() - mailAt > 60000) loadMail(); });
+  setInterval(() => { if (!document.hidden && mailReady() && Date.now() - mailAt > 120000) loadMail(); }, 60000);
+
+  function mailSnapshot(r) {
+    const o = { title: String(r.title).slice(0, 150), blurb: String(r.blurb || '').slice(0, 400), prep: r.prep || 0, cook: r.cook || 0, servings: r.servings || 1, difficulty: r.difficulty || 0,
+      tool: r.tool || '', rookie: !!r.rookie, cardStyle: styleOf(r), categories: (r.categories || []).slice(0, 30), ingredients: (r.ingredients || []).slice(0, 100), steps: (r.steps || []).slice(0, 100),
+      byName: String(r.sourceName || r.ownerName || (CURRENT_USER && CURRENT_USER.displayName) || 'Chef').slice(0, 120) };
+    if (r.sourceName) o.sourceName = String(r.sourceName).slice(0, 120);
+    if (r.sourceUrl) o.sourceUrl = String(r.sourceUrl).slice(0, 500); else if (r.sourceNote) o.sourceNote = String(r.sourceNote).slice(0, 200);
+    if (Array.isArray(r.ingKeys)) o.ingKeys = r.ingKeys.slice(0, 150);
+    return o;
+  }
+  async function sendRecipeMessage(r, emailRaw, noteRaw) {
+    const key = emailKey(emailRaw), note = String(noteRaw || '').trim().slice(0, MAIL_NOTE_MAX);
+    if (!mailReady()) return 'Sign in to send recipes.';
+    if (!validEmail(key)) return 'Enter a valid email address.';
+    if (CURRENT_USER.email && key === emailKey(CURRENT_USER.email)) return 'That’s your own email. Enter someone else’s.';
+    const bad = cleanCheck([['your note', note]]); if (bad) return bad;
+    if (recipeIsProfane(r)) return 'This recipe has language that isn’t allowed here, so it can’t be sent.';
+    let to;
+    try {
+      const snap = await dbApi.getDoc(dbApi.doc(fbDb, 'directory', key));
+      if (!snap.exists()) return 'No Home Plate account found for that email. They need to sign in to Home Plate once first.';
+      to = snap.data();
+    } catch (e) { console.error(e); return 'Couldn’t look that email up (' + (e.code || 'error') + ').'; }
+    if (!to || !to.uid || to.uid === CURRENT_USER.uid) return 'That’s your own account. Enter someone else’s email.';
+    const msg = { fromUid: CURRENT_USER.uid, fromName: String(CURRENT_USER.displayName || 'Chef').slice(0, 80), toUid: to.uid, toName: String(to.displayName || '').slice(0, 80),
+      note, recipe: mailSnapshot(r), createdAt: Date.now(), read: false, savedAs: null };
+    try {
+      const ref = await dbApi.addDoc(dbApi.collection(fbDb, 'messages'), msg);
+      sentBox.unshift(Object.assign({ id: ref.id }, msg));
+    } catch (e) { console.error(e); return 'Couldn’t send (' + (e.code || 'error') + '). Try again in a moment.'; }
+    toast('Sent to ' + (msg.toName || 'them') + '.'); return '';
+  }
+  function openSendDialog(r) {
+    const old = document.getElementById('sendDlg'); if (old) old.remove();
+    const ov = document.createElement('div'); ov.className = 'gm-overlay'; ov.id = 'sendDlg';
+    const box = el('div', 'gm-box'); box.setAttribute('role', 'dialog'); box.setAttribute('aria-modal', 'true'); box.setAttribute('aria-labelledby', 'sdTitle');
+    const close = () => { document.removeEventListener('keydown', onKey); ov.remove(); };
+    const onKey = e => { if (e.key === 'Escape') close(); };
+    ov.addEventListener('click', e => { if (e.target === ov) close(); });
+    const h = el('h2', null, 'Send in Home Plate'); h.id = 'sdTitle'; box.appendChild(h);
+    if (!mailReady()) {
+      box.appendChild(el('p', null, 'Sign in to send recipes to other Home Plate users.'));
+      const si = el('button', 'btn-primary sm', 'Sign in with Google'); si.type = 'button'; si.addEventListener('click', () => { close(); doSignIn(); });
+      const cl = el('button', 'btn-ghost', 'Close'); cl.type = 'button'; cl.style.marginTop = '10px'; cl.addEventListener('click', close);
+      box.appendChild(si); box.appendChild(cl);
+    } else {
+      box.appendChild(el('p', 'gm-small', 'Send “' + r.title + '” to someone with a Home Plate account. Enter the email they signed up with.'));
+      const l1 = el('label', 'send-lab', 'Their email'); l1.setAttribute('for', 'sdEmail');
+      const em = el('input', 'send-in'); em.id = 'sdEmail'; em.type = 'email'; em.autocomplete = 'off'; em.placeholder = 'name@example.com'; em.maxLength = 254;
+      const l2 = el('label', 'send-lab', 'Note (optional)'); l2.setAttribute('for', 'sdNote');
+      const nt = el('textarea', 'send-in'); nt.id = 'sdNote'; nt.rows = 3; nt.maxLength = MAIL_NOTE_MAX; nt.placeholder = 'Add a message';
+      const er = el('p', 'send-err'); er.setAttribute('role', 'alert');
+      const acts = el('div', 'send-acts');
+      const go = el('button', 'btn-primary sm', 'Send'); go.type = 'button';
+      const cn = el('button', 'btn-ghost', 'Cancel'); cn.type = 'button'; cn.addEventListener('click', close);
+      const run = async () => {
+        er.textContent = ''; go.disabled = true; const lab = go.textContent; go.textContent = 'Sending…';
+        const msg = await sendRecipeMessage(r, em.value, nt.value);
+        go.disabled = false; go.textContent = lab;
+        if (msg) er.textContent = msg; else close();
+      };
+      go.addEventListener('click', run); em.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); run(); } });
+      acts.appendChild(go); acts.appendChild(cn);
+      [l1, em, l2, nt, er, acts].forEach(x => box.appendChild(x));
+      setTimeout(() => em.focus(), 30);
+    }
+    ov.appendChild(box); document.body.appendChild(ov); document.addEventListener('keydown', onKey);
+  }
+  SHARE_HOOKS.inApp = openSendDialog;
+
+  function sharedPrefill(m) {
+    const x = m.recipe || {}, names = allCats().map(c => c.name);
+    return { title: x.title, blurb: x.blurb || '', prep: x.prep || 0, cook: x.cook || 0, servings: x.servings || 1, difficulty: x.difficulty || 0, tool: toolById(x.tool) ? x.tool : '',
+      rookie: !!x.rookie, cardStyle: x.cardStyle || 'classic', categories: (x.categories || []).filter(n => names.includes(n)), ingredients: (x.ingredients || []).slice(), steps: (x.steps || []).slice(),
+      sourceName: x.sourceName || x.byName || m.fromName || '', sourceUrl: x.sourceUrl || '', sourceNote: x.sourceNote || '', messageId: m.id };
+  }
+  async function markMessageSaved(msgId, recipeId) {
+    const m = inbox.find(x => x.id === msgId); if (!m) return;
+    m.savedAs = recipeId;
+    try { await dbApi.updateDoc(dbApi.doc(fbDb, 'messages', msgId), { savedAs: recipeId }); } catch (e) { console.error(e); }
+  }
+  async function saveSharedRecipe(m) {
+    if (!mailReady() || m.savedAs) return;
+    const p = sharedPrefill(m), x = m.recipe || {};
+    const id = (slugOf(p.title).slice(0, 40) || 'recipe') + '-' + Math.random().toString(36).slice(2, 7);
+    const rec = { id, title: p.title, blurb: p.blurb, prep: p.prep, cook: p.cook, servings: p.servings, rookie: p.rookie, cardStyle: p.cardStyle, ownerId: CURRENT_USER.uid, ownerName: CURRENT_USER.displayName,
+      visibility: 'private', tool: p.tool, difficulty: p.difficulty, categories: p.categories, ingredients: p.ingredients, steps: p.steps, createdAt: Date.now(), importedFrom: 'shared' };
+    if (p.sourceName) rec.sourceName = p.sourceName;
+    if (p.sourceUrl) rec.sourceUrl = p.sourceUrl; else if (p.sourceNote) rec.sourceNote = p.sourceNote;
+    if (Array.isArray(x.ingKeys)) rec.ingKeys = x.ingKeys.filter(k => typeof k === 'string').slice(0, 150);
+    try { await dbApi.setDoc(dbApi.doc(fbDb, 'recipes', id), rec); }
+    catch (e) { console.error(e); toast('Couldn’t save it (' + (e.code || 'error') + ').'); return; }
+    RECIPES.push(rec); renderBook(); renderCategories(); renderKitchen(); markMessageSaved(m.id, id);
+    toast('Saved to My Recipes (private).'); renderMail();
+  }
+  async function deleteMessage(m) {
+    try { await dbApi.deleteDoc(dbApi.doc(fbDb, 'messages', m.id)); } catch (e) { console.error(e); toast('Couldn’t delete that message.'); return; }
+    inbox = inbox.filter(x => x.id !== m.id); sentBox = sentBox.filter(x => x.id !== m.id); mailOpenId = null; updateMailBadge(); renderMail();
+  }
+  function renderMail() {
+    const body = $('mailBody'); if (!body) return; body.textContent = '';
+    if (!mailReady()) {
+      body.appendChild(el('h1', null, 'Messages')); body.appendChild(el('p', 'sub', 'Send recipes to other Home Plate users and get theirs.'));
+      const c = cardEl('i-mail', 'Inbox', false); c.appendChild(el('p', 'none', 'Sign in to send and receive recipes.'));
+      const b = el('button', 'btn-primary sm', 'Sign in with Google'); b.type = 'button'; b.addEventListener('click', () => doSignIn()); c.appendChild(b); body.appendChild(c); return;
+    }
+    if (mailOpenId) { const m = inbox.concat(sentBox).find(x => x.id === mailOpenId); if (m) { renderMailDetail(body, m); return; } mailOpenId = null; }
+    body.appendChild(el('h1', null, 'Messages')); body.appendChild(el('p', 'sub', 'Recipes sent to you and by you'));
+    const unread = inbox.filter(m => !m.read).length;
+    const seg = el('div', 'seg'); seg.setAttribute('role', 'tablist');
+    [['inbox', 'Inbox' + (unread ? ' (' + unread + ')' : '')], ['sent', 'Sent']].forEach(([k, label]) => {
+      const b = el('button', mailTab === k ? 'on' : null, label); b.type = 'button'; b.setAttribute('role', 'tab'); b.setAttribute('aria-selected', mailTab === k);
+      b.addEventListener('click', () => { mailTab = k; renderMail(); }); seg.appendChild(b);
+    });
+    body.appendChild(seg);
+    const list = mailTab === 'inbox' ? inbox : sentBox;
+    if (!list.length) { body.appendChild(el('p', 'none', mailTab === 'inbox' ? 'No messages yet. When someone sends you a recipe, it shows up here.' : 'Nothing sent yet. Use the share icon on any recipe, then “Send in Home Plate”.')); return; }
+    list.forEach(m => {
+      const row = el('button', 'mail-row' + (mailTab === 'inbox' && !m.read ? ' unread' : '')); row.type = 'button';
+      const top = el('div', 'mail-top'); const who = el('b'); if (mailTab === 'inbox' && !m.read) who.appendChild(el('span', 'mail-dot'));
+      who.appendChild(document.createTextNode(mailTab === 'inbox' ? (m.fromName || 'Someone') : 'To ' + (m.toName || 'a chef'))); top.appendChild(who); top.appendChild(el('span', null, mailDate(m.createdAt)));
+      row.appendChild(top); row.appendChild(el('div', 'mail-title', (m.recipe && m.recipe.title) || 'Recipe'));
+      if (m.note) row.appendChild(el('div', 'mail-snip', m.note));
+      row.addEventListener('click', () => {
+        mailOpenId = m.id;
+        if (mailTab === 'inbox' && !m.read) { m.read = true; updateMailBadge(); dbApi.updateDoc(dbApi.doc(fbDb, 'messages', m.id), { read: true }).catch(e => console.error(e)); }
+        renderMail(); window.scrollTo(0, 0);
+      });
+      body.appendChild(row);
+    });
+  }
+  function renderMailDetail(body, m) {
+    const mine = m.fromUid === CURRENT_USER.uid, x = m.recipe || {};
+    body.appendChild(backBtn('Messages', () => { mailOpenId = null; renderMail(); }));
+    body.appendChild(el('h1', 'sr-only', x.title || 'Recipe'));
+    body.appendChild(el('p', 'mail-meta', (mine ? 'Sent to ' + (m.toName || 'a chef') : 'From ' + (m.fromName || 'someone')) + ' · ' + mailDate(m.createdAt)));
+    if (m.note) body.appendChild(el('blockquote', 'mail-note', m.note));
+    const view = { id: 'msg', title: x.title, blurb: x.blurb, prep: x.prep || 0, cook: x.cook || 0, servings: x.servings || 1, rookie: !!x.rookie, cardStyle: x.cardStyle, categories: x.categories || [], difficulty: x.difficulty || 0, tool: x.tool,
+      ingredients: x.ingredients || [], steps: x.steps || [], sourceName: x.sourceName || x.byName, sourceUrl: x.sourceUrl, sourceNote: x.sourceNote };
+    { const cw = cellWrap(bbCard(view, true)); cw.classList.add('static'); body.appendChild(cw); }
+    body.appendChild(statsBack(view));
+    const ic = cardEl('i-jar', 'Ingredients', true); const ul = el('ul', 'ingredients');
+    view.ingredients.forEach(t => { const li = el('li'); li.appendChild(el('span', null, t)); ul.appendChild(li); }); ic.appendChild(ul); body.appendChild(ic);
+    const dc = cardEl('i-spatula', 'Directions', false); const ol = el('ol', 'steps'); view.steps.forEach(t => ol.appendChild(el('li', null, t))); dc.appendChild(ol); body.appendChild(dc);
+    { const crc = creditCard(view); if (crc) body.appendChild(crc); }
+    const acts = el('div', 'mail-acts');
+    if (!mine) {
+      const saved = m.savedAs && RECIPES.find(r => r.id === m.savedAs);
+      if (m.savedAs) {
+        acts.appendChild(el('p', 'mail-saved', saved ? 'Saved to My Recipes.' : 'You saved this one earlier.'));
+        if (saved) { const v = el('button', 'btn-primary', 'View my copy'); v.type = 'button'; v.addEventListener('click', () => openRecipe(saved.id)); acts.appendChild(v); }
+      } else {
+        const sv = el('button', 'btn-primary', 'Save to My Recipes'); sv.type = 'button'; sv.addEventListener('click', async () => { sv.disabled = true; await saveSharedRecipe(m); sv.disabled = false; });
+        const ed = el('button', 'btn-ghost', 'Edit first, then save'); ed.type = 'button'; ed.addEventListener('click', () => openAddRecipe(sharedPrefill(m)));
+        acts.appendChild(sv); acts.appendChild(ed);
+      }
+    }
+    acts.appendChild(confirmBtn(mine ? 'Unsend' : 'Delete message', mine ? 'Tap again to unsend' : 'Tap again to delete', () => deleteMessage(m)));
+    body.appendChild(acts);
   }
 
   /* ===== Guest data: offer to copy what someone set up before signing in ===== */
@@ -3152,7 +3386,7 @@
   /* ===== Versioning / cache-busting =====
      Bump APP_VERSION on every upload. Running copies compare themselves to the
      live index.html (fetched with no-store) and reload once if it differs. */
-  const APP_VERSION = '2026-11-12.31';
+  const APP_VERSION = '2026-11-13.32';
   (function () {
     const label = document.getElementById('appVer');
     if (label) label.textContent = 'Home Plate v' + APP_VERSION;
