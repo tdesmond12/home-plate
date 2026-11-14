@@ -541,6 +541,10 @@
   .recipe-foot { margin: 26px 2px 8px; padding-top: 16px; border-top: 2px dotted rgba(204, 71, 66, .25); }
   .recipe-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
   .recipe-top .back { margin-bottom: 0; }
+  .top-actions { display: flex; gap: 10px; }
+  .btn-danger { background: #fff; color: var(--red); border: 1.5px solid var(--red); border-radius: 999px; padding: 12px 18px; font: inherit; font-weight: 700; cursor: pointer; width: 100%; }
+  .btn-danger:disabled { opacity: .45; cursor: not-allowed; }
+  .del-list { margin: 8px 0 0; padding-left: 20px; font-size: 14px; line-height: 1.45; }
   .share-ico { width: 44px; height: 44px; border-radius: 50%; border: 1.5px solid var(--line); background: #fff; color: var(--green); display: inline-flex; align-items: center; justify-content: center; cursor: pointer; }
   .share-ico .ico { width: 22px; height: 22px; }
   .share-ico:focus-visible { outline: 2px solid var(--navy); outline-offset: 2px; }
@@ -624,6 +628,8 @@
   .send-in:focus { outline: 2px solid var(--navy); outline-offset: 1px; }
   .send-err { color: var(--red); font-weight: 600; font-size: 14px; margin: 10px 0 0; min-height: 1px; }
   .send-acts { display: flex; gap: 10px; margin-top: 14px; }
+  .blk-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 6px 0; }
+  .send-acts .btn-ghost { flex: 1; width: auto; margin: 0; }
   .send-acts .btn-primary { flex: 1; width: auto; margin: 0; }
 
   #toast { position: fixed; left: 50%; bottom: calc(var(--nav-h) + 16px); transform: translate(-50%, 16px); background: var(--navy); color: #fff; padding: 10px 16px;
@@ -858,6 +864,7 @@
   <symbol id="i-cap" viewBox="0 0 24 24"><path d="M5 15a7 7 0 0 1 14 0"/><path d="M3 15.5h18c0 2-3 3-9 3s-9-1-9-3z"/><path d="M12 8.5v7"/><circle cx="12" cy="7.2" r=".7"/></symbol>
   <symbol id="i-spatula" viewBox="0 0 24 24"><rect x="8" y="3" width="8" height="9" rx="2"/><path d="M10.5 5.5v4M13.5 5.5v4"/><path d="M12 12v9"/></symbol>
   <symbol id="i-mail" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></symbol>
+  <symbol id="i-pencil" viewBox="0 0 24 24"><path d="M4 20l1.2-4.4L16.6 4.2a2.2 2.2 0 0 1 3.1 0l.1.1a2.2 2.2 0 0 1 0 3.1L8.4 18.8z"/><path d="M14.5 6.3l3.2 3.2"/></symbol>
   <symbol id="i-share" viewBox="0 0 24 24"><circle cx="6" cy="12" r="2.6"/><circle cx="18" cy="5.5" r="2.6"/><circle cx="18" cy="18.5" r="2.6"/><path d="M8.3 10.8l7.4-4M8.3 13.2l7.4 4"/></symbol>
   <symbol id="i-tag" viewBox="0 0 24 24"><path d="M3 12V4h8l10 10-8 8z"/><circle cx="7.5" cy="8.5" r="1.2"/></symbol>
   <symbol id="i-cart" viewBox="0 0 24 24"><path d="M2 4h3l3 12h10l3-9H6"/><circle cx="10" cy="20" r="1.6"/><circle cx="17" cy="20" r="1.6"/></symbol>
@@ -1036,6 +1043,7 @@
         <h1>My Profile</h1>
         <p class="sub">Your account and preferences</p>
         <div class="card"><h2><span class="badge"><svg class="ico"><use href="#i-cap"/></svg></span>Account</h2><div class="label left" id="acctInfo">Profile details will go here.</div><p class="acct-msg" id="acctMsg" role="status"></p><div id="acctAction"></div></div>
+        <div class="card" id="dangerCard" hidden><h2><span class="badge"><svg class="ico"><use href="#i-x"/></svg></span>Delete account</h2><p class="f-hint">Permanently delete your account and everything you have stored in Home Plate. This can’t be undone.</p><button type="button" class="btn-danger" id="delAcctBtn">Delete my account and data</button></div>
       </section>
 
       <section class="view" id="messages"><div id="mailBody"></div></section>
@@ -1561,7 +1569,13 @@
     if (!r) { body.appendChild(el('p', 'sub', 'Recipe not found.')); return; }
     const top = el('div', 'recipe-top'); top.appendChild(backBtn('Recipe Book', () => showView('book')));
     const shb = el('button', 'share-ico'); shb.type = 'button'; shb.setAttribute('aria-label', 'Share this recipe'); shb.appendChild(svgUse('i-share'));
-    shb.addEventListener('click', () => openShare(r)); top.appendChild(shb); body.appendChild(top);
+    shb.addEventListener('click', () => openShare(r));
+    const tact = el('div', 'top-actions');
+    if (CURRENT_USER && CURRENT_USER.uid && r.ownerId === CURRENT_USER.uid) {
+      const eb = el('button', 'share-ico'); eb.type = 'button'; eb.setAttribute('aria-label', 'Edit this recipe'); eb.appendChild(svgUse('i-pencil'));
+      eb.addEventListener('click', () => openAddRecipe(editPrefill(r))); tact.appendChild(eb);
+    }
+    tact.appendChild(shb); top.appendChild(tact); body.appendChild(top);
     const h1 = el('h1', 'sr-only', r.title); body.appendChild(h1);
     { const cw = cellWrap(bbCard(r, true)); cw.classList.add('static'); body.appendChild(cw); }
     body.appendChild(statsBack(r));
@@ -1744,7 +1758,11 @@
         box.appendChild(el('p', 'gm-small', d.url ? 'Send a link that opens this recipe in Home Plate.' : 'This recipe is private, so these send the full recipe text.'));
         addOptions(list, d); box.appendChild(list);
       }
-      const cl = el('button', 'btn-ghost', 'Close'); cl.type = 'button'; cl.style.marginTop = '12px'; cl.addEventListener('click', close); box.appendChild(cl);
+      const bot = el('div', 'send-acts'); bot.style.marginTop = '14px';
+      if (visFor(r) === 'public' && !(CURRENT_USER && r.ownerId === CURRENT_USER.uid)) {
+        const rb = el('button', 'btn-ghost sm', 'Report'); rb.type = 'button'; rb.setAttribute('aria-label', 'Report this recipe'); rb.addEventListener('click', () => { close(); openReportRecipe(r); }); bot.appendChild(rb);
+      }
+      const cl = el('button', 'btn-ghost', 'Close'); cl.type = 'button'; cl.addEventListener('click', close); bot.appendChild(cl); box.appendChild(bot);
     };
     const addOptions = (list, d) => {
       if (navigator.share) {
@@ -2476,6 +2494,11 @@
   const addBody = document.getElementById('addBody');
   document.getElementById('addRecipeBtn').addEventListener('click', openAddRecipe);
 
+  function editPrefill(r) {
+    return { editId: r.id, title: r.title, blurb: r.blurb || '', prep: r.prep || 0, cook: r.cook || 0, servings: r.servings || 1, difficulty: r.difficulty || 0, tool: toolById(r.tool) ? r.tool : '',
+      rookie: !!r.rookie, cardStyle: styleOf(r), categories: (r.categories || []).slice(), ingredients: (r.ingredients || []).slice(), steps: (r.steps || []).slice(), visibility: visFor(r),
+      sourceName: r.sourceName || '', sourceUrl: r.sourceUrl || '', sourceNote: r.sourceNote || '' };
+  }
   function openAddRecipe(pre) {
     addState = { mode: 'type', cats: [], tool: '', diff: 0, vis: 'private', style: 'classic', rookie: true, photos: [], busy: false, imported: null, prefill: pre || null };
     renderAdd(); showView('addrecipe'); window.scrollTo(0, 0);
@@ -2535,15 +2558,16 @@
   function renderAdd() {
     const S = addState || (addState = { mode: 'type', cats: [], tool: '', diff: 0, vis: 'private', style: 'classic', rookie: true, photos: [], busy: false, imported: null });
     const PRE = S.prefill;
-    if (PRE) { S.cats = PRE.categories.slice(); S.tool = PRE.tool || ''; S.diff = PRE.difficulty || 0; S.style = PRE.cardStyle || 'classic'; S.rookie = !!PRE.rookie; S.imported = 'shared'; S.fromMessage = PRE.messageId; S.prefill = null; }
+    if (PRE) { S.cats = PRE.categories.slice(); S.tool = PRE.tool || ''; S.diff = PRE.difficulty || 0; S.style = PRE.cardStyle || 'classic'; S.rookie = !!PRE.rookie; S.vis = PRE.visibility || S.vis; if (PRE.editId) { S.editId = PRE.editId; S.imported = null; } else { S.imported = 'shared'; S.fromMessage = PRE.messageId; } S.prefill = null; }
+    const EDITING = S.editId ? RECIPES.find(r => r.id === S.editId && CURRENT_USER && r.ownerId === CURRENT_USER.uid) : null;
     addBody.textContent = '';
-    addBody.appendChild(backBtn(PRE ? 'Messages' : 'Recipe Book', () => PRE ? openMail() : showView('book')));
-    addBody.appendChild(el('h1', null, PRE ? 'Save Shared Recipe' : 'Add a Recipe'));
+    addBody.appendChild(EDITING ? backBtn('Recipe', () => openRecipe(EDITING.id)) : backBtn(PRE ? 'Messages' : 'Recipe Book', () => PRE ? openMail() : showView('book')));
+    addBody.appendChild(el('h1', null, EDITING ? 'Edit Recipe' : PRE ? 'Save Shared Recipe' : 'Add a Recipe'));
     if (!(CURRENT_USER && CURRENT_USER.uid)) {
       addBody.appendChild(el('p', 'sub', 'Sign in to add recipes to your Recipe Book.'));
       const b = el('button', 'btn-primary', 'Sign in with Google'); b.type = 'button'; b.addEventListener('click', () => doSignIn()); addBody.appendChild(b); return;
     }
-    addBody.appendChild(el('p', 'sub', PRE ? 'Shared with you. Change anything you like, then save it to My Recipes.' : 'Type it in, or let Gemini read a link or photos for you.'));
+    addBody.appendChild(el('p', 'sub', EDITING ? 'Change anything you like. Credit to the original creator can’t be changed.' : PRE ? 'Shared with you. Change anything you like, then save it to My Recipes.' : 'Type it in, or let Gemini read a link or photos for you.'));
     const F = {};
 
     // ---- how to add
@@ -2551,7 +2575,7 @@
     const segBtns = [['type', 'Type it in'], ['link', 'From a link'], ['photos', 'From photos']].map(([m, label]) => {
       const b = el('button', null, label); b.type = 'button'; b.dataset.mode = m; b.setAttribute('role', 'tab'); b.addEventListener('click', () => setMode(m)); seg.appendChild(b); return b;
     });
-    addBody.appendChild(seg);
+    addBody.appendChild(seg); if (EDITING) seg.hidden = true;
 
     // ---- import panel
     const imp = cardEl('i-book', 'Read it with Gemini', false);
@@ -2663,9 +2687,9 @@
     /* Anything Gemini filled in is read-only. Fields it could not find stay editable (and required). */
     function setLocks() {
       [F.cname, F.csrc].forEach(i => { i.readOnly = i.dataset.lock === '1'; i.classList.toggle('locked', i.readOnly); });
-      lockNote.hidden = startOver.hidden = !(F.cname.readOnly || F.csrc.readOnly);
+      lockNote.hidden = !(F.cname.readOnly || F.csrc.readOnly); startOver.hidden = !!EDITING || lockNote.hidden;
     }
-    addBody.appendChild(cr);
+    addBody.appendChild(cr); if (EDITING) cr.hidden = !(EDITING.sourceName || EDITING.sourceUrl || EDITING.sourceNote);
     function needCredit() { return S.mode !== 'type' || !!S.imported; }
     function updateCreditReq() {
       const need = needCredit(); cnameF.mark.hidden = csrcF.mark.hidden = !need;
@@ -2677,8 +2701,8 @@
 
     // ---- save
     const err = el('p', 'form-err'); err.setAttribute('role', 'alert');
-    const acts = el('div', 'form-actions'); const save = el('button', 'btn-primary', 'Save recipe'); save.type = 'button';
-    const cancel = el('button', 'btn-ghost', 'Cancel'); cancel.type = 'button'; cancel.addEventListener('click', () => showView('book'));
+    const acts = el('div', 'form-actions'); const save = el('button', 'btn-primary', EDITING ? 'Save changes' : 'Save recipe'); save.type = 'button';
+    const cancel = el('button', 'btn-ghost', 'Cancel'); cancel.type = 'button'; cancel.addEventListener('click', () => EDITING ? openRecipe(EDITING.id) : showView('book'));
     acts.appendChild(save); acts.appendChild(cancel); addBody.appendChild(err); addBody.appendChild(acts);
 
     function setMode(m) {
@@ -2736,12 +2760,27 @@
       if (!title) { err.textContent = 'Give the recipe a name.'; F.title.focus(); return; }
       if (!ingredients.length) { err.textContent = 'Add at least one ingredient.'; F.ings.focus(); return; }
       if (!steps.length) { err.textContent = 'Add at least one direction.'; F.steps.focus(); return; }
-      const badText = cleanCheck([['the recipe name', title], ['the description', F.blurb.value], ['the ingredients', ingredients.join('\n')], ['the directions', steps.join('\n')], ['the creator name', cname], ['the source', srcRaw]]);
+      const badText = cleanCheck([['the recipe name', title], ['the description', F.blurb.value], ['the ingredients', ingredients.join('\n')], ['the directions', steps.join('\n')], ['the creator name', EDITING ? '' : cname], ['the source', EDITING ? '' : srcRaw]]);
       if (badText) { err.textContent = badText; return; }
       if (needCredit() && (!cname || (!srcRaw && S.imported !== 'shared'))) { err.textContent = 'Please credit the original creator and the website or source.'; (cname ? F.csrc : F.cname).focus(); return; }
       const src = parseSource(srcRaw);
       if (S.mode === 'link' && !src.url) { err.textContent = 'For a link import, the source needs to be the recipe’s web address.'; F.csrc.focus(); return; }
       if (!fbDb || !dbUserReady()) { err.textContent = 'You need to be signed in (and online) to save.'; return; }
+      if (EDITING) {
+        const orig = EDITING, ingChanged = JSON.stringify(orig.ingredients || []) !== JSON.stringify(ingredients);
+        const upd = Object.assign({}, orig, { title, blurb: F.blurb.value.trim().slice(0, 400), prep: clampInt(F.prep.value, 0, 9999, 0), cook: clampInt(F.cook.value, 0, 9999, 0), servings: clampInt(F.serv.value, 1, 999, 1),
+          rookie: S.rookie, cardStyle: S.style, visibility: S.vis, tool: S.tool, difficulty: S.diff, categories: S.cats.slice(), ingredients, steps });
+        save.disabled = true; const lab0 = save.textContent;
+        try {
+          save.textContent = 'Saving…';
+          if (ingChanged) { delete upd.ingKeys; if (typeof ingKeysFor === 'function') { const ik = await ingKeysFor(ingredients); if (ik) upd.ingKeys = ik; } }
+          await dbApi.setDoc(dbApi.doc(fbDb, 'recipes', orig.id), upd);
+          const i = RECIPES.findIndex(r => r.id === orig.id); if (i >= 0) RECIPES[i] = upd;
+          renderBook(); renderCategories(); renderKitchen(); toast('Changes saved.'); addState = null; openRecipe(orig.id);
+        } catch (e) { console.error(e); err.textContent = 'Could not save (' + (e.code || 'error') + '). Check your connection and try again.'; }
+        finally { save.disabled = false; save.textContent = lab0; }
+        return;
+      }
       const id = (slugOf(title).slice(0, 40) || 'recipe') + '-' + Math.random().toString(36).slice(2, 7);
       const rec = { id, title, blurb: F.blurb.value.trim().slice(0, 400), prep: clampInt(F.prep.value, 0, 9999, 0), cook: clampInt(F.cook.value, 0, 9999, 0), servings: clampInt(F.serv.value, 1, 999, 1),
         rookie: S.rookie, cardStyle: S.style, ownerId: CURRENT_USER.uid, ownerName: CURRENT_USER.displayName, visibility: S.vis, tool: S.tool, difficulty: S.diff,
@@ -2766,7 +2805,9 @@
       F.ings.value = PRE.ingredients.join('\n'); F.steps.value = PRE.steps.join('\n'); F.tool.value = S.tool;
       F.cname.value = PRE.sourceName || ''; F.csrc.value = PRE.sourceUrl || PRE.sourceNote || '';
       F.cname.dataset.lock = F.cname.value ? '1' : ''; F.csrc.dataset.lock = F.csrc.value ? '1' : '';
-      lockNote.textContent = 'Locked: this credit came with the shared recipe, so it stays attached. Starting over clears everything.'; setLocks();
+      lockNote.textContent = EDITING ? 'Locked: credit to the original creator can’t be changed after a recipe is saved.' : 'Locked: this credit came with the shared recipe, so it stays attached. Starting over clears everything.';
+      if (EDITING) { F.cname.dataset.lock = '1'; F.csrc.dataset.lock = '1'; }
+      F.vis.value = S.vis; setLocks();
     }
     drawCats(); drawDiff(); drawThumbs(); setMode(S.mode); updatePreview();
   }
@@ -3064,15 +3105,20 @@
         customCats = Array.isArray(d.customCategories) ? d.customCategories : [];
         pantryKeys = Array.isArray(d.pantry) ? d.pantry.filter(x => typeof x === 'string') : [];
         myPacks = cleanPacks(d.packs); weekMeals = cleanWeek(d.week); shopItems = cleanShop(d.shop);
+        hiddenIds = Array.isArray(d.hiddenRecipes) ? d.hiddenRecipes.filter(x => typeof x === 'string') : [];
+        if (hiddenIds.length) { const keep = RECIPES.filter(r => r.ownerId === u.uid || !hiddenIds.includes(r.id)); RECIPES.splice(0, RECIPES.length, ...keep); }
+        blockedUids = Array.isArray(d.blocked) ? d.blocked.filter(x => typeof x === 'string') : [];
+        blockedNames = blockedUids.map((x, i) => (Array.isArray(d.blockedNames) && typeof d.blockedNames[i] === 'string') ? d.blockedNames[i] : 'A chef');
         if (!us.exists()) A.setDoc(A.doc(fbDb, 'users', u.uid), { displayName: u.displayName || '', createdAt: Date.now() }, { merge: true }).catch(() => {});
       } else {
         kitchenTools = readLS('hp_kitchen_tools', '[]'); customCats = loadCustom(); pantryKeys = readLS('hp_pantry', '[]');
         myPacks = cleanPacks(readLS('hp_packs', '[]')); weekMeals = cleanWeek(readLS('hp_week', '[]')); shopItems = cleanShop(readLS('hp_shop', '[]'));
+        blockedUids = []; blockedNames = []; hiddenIds = [];
       }
     } catch (e) { console.error(e); }
     if (currentRecipe && !RECIPES.some(r => r.id === currentRecipe)) { currentRecipe = null; if (document.getElementById('recipe').classList.contains('active')) showView('book'); }
     renderCategories(); renderBook(); renderKitchen(); renderPlanner(); renderShopping(); if (currentRecipe) renderRecipe();
-    refreshTidyBtn();
+    refreshTidyBtn(); syncDanger();
     if (seq === loadSeq) { if (u) { ensureDirectory(u).then(loadMail); } else { inbox = []; sentBox = []; mailOpenId = null; updateMailBadge(); } }
     if (seq === loadSeq) openPendingShare();
     if (u && seq === loadSeq) maybeOfferGuestImport(u);
@@ -3084,7 +3130,10 @@
      messages/{id} holds a snapshot of the recipe, so it works for private recipes too.
      The receiver can save a private copy to My Recipes, or edit it first. */
   const MAIL_NOTE_MAX = 300;
-  let inbox = [], sentBox = [], mailTab = 'inbox', mailOpenId = null, mailBusy = false, mailAt = 0;
+  let inbox = [], sentBox = [], reportBox = [], mailTab = 'inbox', mailOpenId = null, mailBusy = false, mailAt = 0;
+  let blockedUids = [], blockedNames = [];
+  const isAdminUser = () => !!(CURRENT_USER && CURRENT_USER.uid && emailKey(CURRENT_USER.email) === ADMIN_EMAIL && CURRENT_USER.emailVerified);
+  const REPORT_REASONS = [['language', 'Inappropriate language'], ['spam', 'Spam or junk'], ['harass', 'Harassment'], ['other', 'Something else']];
   const emailKey = e => String(e || '').trim().toLowerCase();
   const validEmail = e => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e) && e.length <= 254;
   const mailDate = t => { try { return new Date(t).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }); } catch (e) { return ''; } };
@@ -3110,7 +3159,8 @@
       const [a, b] = await Promise.all([A.getDocs(A.query(col, A.where('toUid', '==', uid))), A.getDocs(A.query(col, A.where('fromUid', '==', uid)))]);
       if (!CURRENT_USER || CURRENT_USER.uid !== uid) return;
       const rows = sn => sn.docs.map(d => Object.assign({ id: d.id }, d.data())).sort((x, y) => (y.createdAt || 0) - (x.createdAt || 0));
-      inbox = rows(a).filter(m => !mailIsProfane(m)); sentBox = rows(b); mailAt = Date.now();
+      inbox = rows(a).filter(m => !blockedUids.includes(m.fromUid) && !mailIsProfane(m)); sentBox = rows(b); mailAt = Date.now();
+      if (isAdminUser()) { try { const rs = await A.getDocs(A.collection(fbDb, 'reports')); reportBox = rs.docs.map(d => Object.assign({ id: d.id }, d.data())).filter(x => !x.status).sort((x, y) => (y.createdAt || 0) - (x.createdAt || 0)); } catch (e) { console.error(e); reportBox = []; } } else reportBox = [];
     } catch (e) { console.error(e); }
     finally { mailBusy = false; }
     updateMailBadge(); if ($('messages').classList.contains('active')) renderMail();
@@ -3147,7 +3197,7 @@
     try {
       const ref = await dbApi.addDoc(dbApi.collection(fbDb, 'messages'), msg);
       sentBox.unshift(Object.assign({ id: ref.id }, msg));
-    } catch (e) { console.error(e); return 'Couldn’t send (' + (e.code || 'error') + '). Try again in a moment.'; }
+    } catch (e) { console.error(e); return e && e.code === 'permission-denied' ? 'Couldn’t send this message. They may not be accepting messages from you.' : 'Couldn’t send (' + (e.code || 'error') + '). Try again in a moment.'; }
     toast('Sent to ' + (msg.toName || 'them') + '.'); return '';
   }
   function openSendDialog(r) {
@@ -3217,6 +3267,107 @@
     try { await dbApi.deleteDoc(dbApi.doc(fbDb, 'messages', m.id)); } catch (e) { console.error(e); toast('Couldn’t delete that message.'); return; }
     inbox = inbox.filter(x => x.id !== m.id); sentBox = sentBox.filter(x => x.id !== m.id); mailOpenId = null; updateMailBadge(); renderMail();
   }
+  async function blockSender(m) {
+    const uid = m.fromUid; if (!uid || !mailReady()) return;
+    if (!blockedUids.includes(uid)) { blockedUids.push(uid); blockedNames.push(String(m.fromName || 'A chef').slice(0, 80)); }
+    await dbSaveUser({ blocked: blockedUids, blockedNames });
+    const theirs = inbox.filter(x => x.fromUid === uid);
+    inbox = inbox.filter(x => x.fromUid !== uid); mailOpenId = null; updateMailBadge();
+    theirs.forEach(x => dbApi.deleteDoc(dbApi.doc(fbDb, 'messages', x.id)).catch(e => console.error(e)));
+    toast('Blocked ' + (m.fromName || 'that sender') + '. They can no longer message you.'); renderMail();
+  }
+  async function unblockSender(uid) {
+    const i = blockedUids.indexOf(uid); if (i < 0) return;
+    blockedUids.splice(i, 1); blockedNames.splice(i, 1);
+    await dbSaveUser({ blocked: blockedUids, blockedNames }); toast('Unblocked.'); renderMail();
+  }
+  const reportedLocal = () => { try { return JSON.parse(localStorage.getItem('hp_reported') || '[]'); } catch (e) { return []; } };
+  const markReportedLocal = k => { try { const a = reportedLocal(); if (!a.includes(k)) { a.push(k); localStorage.setItem('hp_reported', JSON.stringify(a.slice(-500))); } } catch (e) {} };
+  /* One report per person per target: the report's id is "<reporterUid>_<messageId or recipeId>", and the rules only allow creating it once. */
+  async function fileReport(kind, targetId, body, reason, details) {
+    if (!mailReady()) return 'Sign in to send a report.';
+    const key = CURRENT_USER.uid + '_' + targetId;
+    if (reportedLocal().includes(key)) return 'You already reported this one. Thanks, the admin will take a look.';
+    const rep = Object.assign({ kind, reporterUid: CURRENT_USER.uid, reporterName: String(CURRENT_USER.displayName || 'Chef').slice(0, 80), reason, details: String(details || '').slice(0, 300), createdAt: Date.now() }, body);
+    try { await dbApi.setDoc(dbApi.doc(fbDb, 'reports', key), rep); markReportedLocal(key); return ''; }
+    catch (e) { console.error(e); return e && e.code === 'permission-denied' ? 'Couldn’t send the report. You may have already reported this one.' : 'Couldn’t send the report (' + (e.code || 'error') + '). Try again in a moment.'; }
+  }
+  const reportMessage = (m, reason, details) => { const x = m.recipe || {};
+    return fileReport('message', m.id, { reportedUid: m.fromUid, reportedName: String(m.fromName || '').slice(0, 80), messageId: m.id, note: String(m.note || '').slice(0, 300),
+      recipe: { title: String(x.title || '').slice(0, 150), blurb: String(x.blurb || '').slice(0, 400), ingredients: (x.ingredients || []).slice(0, 100), steps: (x.steps || []).slice(0, 100) } }, reason, details); };
+  const reportRecipe = (r, reason, details) => fileReport('recipe', r.id, { reportedUid: String(r.ownerId || ''), reportedName: String(r.ownerName || '').slice(0, 80), recipeId: r.id, note: '',
+    recipe: { title: String(r.title || '').slice(0, 150), blurb: String(r.blurb || '').slice(0, 400), ingredients: (r.ingredients || []).slice(0, 100), steps: (r.steps || []).slice(0, 100) } }, reason, details);
+
+  let hiddenIds = [];
+  async function hideRecipeForMe(id) {
+    if (!hiddenIds.includes(id)) hiddenIds.push(id); hiddenIds = hiddenIds.slice(-300);
+    await dbSaveUser({ hiddenRecipes: hiddenIds });
+    const i = RECIPES.findIndex(r => r.id === id); if (i >= 0) RECIPES.splice(i, 1);
+    currentRecipe = null; renderBook(); renderCategories(); renderKitchen(); showView('book');
+  }
+  function reportDialog(o) {
+    const old = document.getElementById('repDlg'); if (old) old.remove();
+    const ov = document.createElement('div'); ov.className = 'gm-overlay'; ov.id = 'repDlg';
+    const box = el('div', 'gm-box'); box.setAttribute('role', 'dialog'); box.setAttribute('aria-modal', 'true'); box.setAttribute('aria-labelledby', 'rpTitle');
+    const close = () => { document.removeEventListener('keydown', onKey); ov.remove(); };
+    const onKey = e => { if (e.key === 'Escape') close(); };
+    ov.addEventListener('click', e => { if (e.target === ov) close(); });
+    const h = el('h2', null, o.heading); h.id = 'rpTitle'; box.appendChild(h);
+    box.appendChild(el('p', 'gm-small', 'This sends it to the Home Plate admin to review. You can report each one once.'));
+    const l1 = el('label', 'send-lab', 'Reason'); l1.setAttribute('for', 'rpReason');
+    const sel = el('select', 'send-in'); sel.id = 'rpReason'; REPORT_REASONS.forEach(([v, t]) => { const op = el('option', null, t); op.value = v; sel.appendChild(op); });
+    const l2 = el('label', 'send-lab', 'Details (optional)'); l2.setAttribute('for', 'rpDetails');
+    const dt = el('textarea', 'send-in'); dt.id = 'rpDetails'; dt.rows = 3; dt.maxLength = 300;
+    const row = el('label', 'rookie-row'); const cb = el('input'); cb.type = 'checkbox'; cb.checked = true; cb.id = 'rpBlock';
+    const tx = el('span'); tx.appendChild(el('b', null, o.checkLabel)); tx.appendChild(el('small', null, o.checkSub)); row.appendChild(cb); row.appendChild(tx);
+    const er = el('p', 'send-err'); er.setAttribute('role', 'alert');
+    const acts = el('div', 'send-acts'); const go = el('button', 'btn-primary sm', 'Send report'); go.type = 'button';
+    const cn = el('button', 'btn-ghost', 'Cancel'); cn.type = 'button'; cn.addEventListener('click', close);
+    go.addEventListener('click', async () => {
+      go.disabled = true; er.textContent = '';
+      const msg = await o.send(sel.value, dt.value);
+      if (msg) { er.textContent = msg; go.disabled = false; return; }
+      const on = cb.checked; close(); toast('Reported. Thank you.'); o.after(on);
+    });
+    acts.appendChild(go); acts.appendChild(cn);
+    [l1, sel, l2, dt, row, er, acts].forEach(x => box.appendChild(x));
+    ov.appendChild(box); document.body.appendChild(ov); document.addEventListener('keydown', onKey);
+  }
+  const openReportDialog = m => reportDialog({ heading: 'Report this message', checkLabel: 'Also block this sender', checkSub: 'Removes their messages and stops new ones.',
+    send: (rs, d) => reportMessage(m, rs, d), after: on => { if (on) blockSender(m); else { mailOpenId = null; renderMail(); } } });
+  function openReportRecipe(r) {
+    if (!mailReady()) { toast('Sign in to report a recipe.'); return; }
+    reportDialog({ heading: 'Report this recipe', checkLabel: 'Also hide this recipe from me', checkSub: 'It will disappear from your Recipe Book.',
+      send: (rs, d) => reportRecipe(r, rs, d), after: on => { if (on) hideRecipeForMe(r.id); } });
+  }
+  async function setReportStatus(rp, status) {
+    try { await dbApi.updateDoc(dbApi.doc(fbDb, 'reports', rp.id), { status }); reportBox = reportBox.filter(x => x.id !== rp.id); renderMail(); return true; }
+    catch (e) { console.error(e); toast('Couldn’t update that report.'); return false; }
+  }
+  function renderReports(body) {
+    if (!reportBox.length) { body.appendChild(el('p', 'none', 'No reports to review.')); return; }
+    reportBox.forEach(rp => {
+      const isRecipe = rp.kind === 'recipe';
+      const c = cardEl('i-mail', (isRecipe ? 'Recipe: ' : 'Message: ') + (REPORT_REASONS.find(r => r[0] === rp.reason) || [0, 'Report'])[1], false);
+      c.appendChild(el('p', 'mail-meta', (isRecipe ? 'Author: ' : 'Sender: ') + (rp.reportedName || '?') + ' · reported by ' + (rp.reporterName || '?') + ' · ' + mailDate(rp.createdAt)));
+      if (rp.details) c.appendChild(el('blockquote', 'mail-note', 'Reporter says: ' + rp.details));
+      if (rp.note) c.appendChild(el('blockquote', 'mail-note', 'Their note: ' + rp.note));
+      const rc = rp.recipe || {}; c.appendChild(el('p', null, 'Recipe: ' + (rc.title || '')));
+      const det = document.createElement('details'); det.appendChild(el('summary', null, 'Show recipe text'));
+      const tp = el('p', null, [rc.blurb].concat(rc.ingredients || [], rc.steps || []).filter(Boolean).join('\n')); tp.style.whiteSpace = 'pre-wrap'; det.appendChild(tp); c.appendChild(det);
+      c.appendChild(el('p', 'mail-meta', (isRecipe ? 'Author ID: ' : 'Sender ID: ') + (rp.reportedUid || '')));
+      const acts = el('div', 'mail-acts');
+      if (isRecipe) acts.appendChild(confirmBtn('Remove recipe', 'Tap again to remove this recipe for everyone', async () => {
+        try {
+          await dbApi.deleteDoc(dbApi.doc(fbDb, 'recipes', rp.recipeId));
+          const i = RECIPES.findIndex(r => r.id === rp.recipeId); if (i >= 0) RECIPES.splice(i, 1);
+          renderBook(); renderCategories(); renderKitchen(); toast('Recipe removed.'); await setReportStatus(rp, 'removed');
+        } catch (e) { console.error(e); toast('Couldn’t remove that recipe (' + (e.code || 'error') + ').'); }
+      }));
+      acts.appendChild(confirmBtn('Dismiss report', 'Tap again to dismiss', () => setReportStatus(rp, 'dismissed')));
+      c.appendChild(acts); body.appendChild(c);
+    });
+  }
   function renderMail() {
     const body = $('mailBody'); if (!body) return; body.textContent = '';
     if (!mailReady()) {
@@ -3228,13 +3379,15 @@
     body.appendChild(el('h1', null, 'Messages')); body.appendChild(el('p', 'sub', 'Recipes sent to you and by you'));
     const unread = inbox.filter(m => !m.read).length;
     const seg = el('div', 'seg'); seg.setAttribute('role', 'tablist');
-    [['inbox', 'Inbox' + (unread ? ' (' + unread + ')' : '')], ['sent', 'Sent']].forEach(([k, label]) => {
+    [['inbox', 'Inbox' + (unread ? ' (' + unread + ')' : '')], ['sent', 'Sent']].concat(isAdminUser() ? [['reports', 'Reports' + (reportBox.length ? ' (' + reportBox.length + ')' : '')]] : []).forEach(([k, label]) => {
       const b = el('button', mailTab === k ? 'on' : null, label); b.type = 'button'; b.setAttribute('role', 'tab'); b.setAttribute('aria-selected', mailTab === k);
       b.addEventListener('click', () => { mailTab = k; renderMail(); }); seg.appendChild(b);
     });
     body.appendChild(seg);
+    if (mailTab === 'reports' && isAdminUser()) { renderReports(body); return; }
+    if (mailTab === 'reports') mailTab = 'inbox';
     const list = mailTab === 'inbox' ? inbox : sentBox;
-    if (!list.length) { body.appendChild(el('p', 'none', mailTab === 'inbox' ? 'No messages yet. When someone sends you a recipe, it shows up here.' : 'Nothing sent yet. Use the share icon on any recipe, then “Send in Home Plate”.')); return; }
+    if (!list.length) { body.appendChild(el('p', 'none', mailTab === 'inbox' ? 'No messages yet. When someone sends you a recipe, it shows up here.' : 'Nothing sent yet. Use the share icon on any recipe, then “Send in Home Plate”.')); renderBlocked(body); return; }
     list.forEach(m => {
       const row = el('button', 'mail-row' + (mailTab === 'inbox' && !m.read ? ' unread' : '')); row.type = 'button';
       const top = el('div', 'mail-top'); const who = el('b'); if (mailTab === 'inbox' && !m.read) who.appendChild(el('span', 'mail-dot'));
@@ -3248,6 +3401,16 @@
       });
       body.appendChild(row);
     });
+    renderBlocked(body);
+  }
+  function renderBlocked(body) {
+    if (!blockedUids.length) return;
+    const c = cardEl('i-user', 'Blocked senders', false);
+    blockedUids.forEach((uid, i) => {
+      const r = el('div', 'blk-row'); r.appendChild(el('span', null, blockedNames[i] || 'A chef'));
+      const u = el('button', 'btn-ghost sm', 'Unblock'); u.type = 'button'; u.addEventListener('click', () => unblockSender(uid)); r.appendChild(u); c.appendChild(r);
+    });
+    body.appendChild(c);
   }
   function renderMailDetail(body, m) {
     const mine = m.fromUid === CURRENT_USER.uid, x = m.recipe || {};
@@ -3276,8 +3439,82 @@
       }
     }
     acts.appendChild(confirmBtn(mine ? 'Unsend' : 'Delete message', mine ? 'Tap again to unsend' : 'Tap again to delete', () => deleteMessage(m)));
+    if (!mine) {
+      const rr = el('div', 'send-acts');
+      const rp = el('button', 'btn-ghost sm', 'Report'); rp.type = 'button'; rp.addEventListener('click', () => openReportDialog(m));
+      rr.appendChild(rp); rr.appendChild(confirmBtn('Block sender', 'Tap again to block', () => blockSender(m)));
+      acts.appendChild(rr);
+    }
     body.appendChild(acts);
   }
+
+
+  /* ===== Delete my account and data ===== */
+  function syncDanger() { const c = document.getElementById('dangerCard'); if (c) c.hidden = !(CURRENT_USER && CURRENT_USER.uid && fbApi && fbAuth && fbAuth.currentUser); }
+  async function wipeUserData(uid, email, say) {
+    const A = dbApi, db = fbDb;
+    const delAll = async (qry) => { const sn = await A.getDocs(qry); await Promise.all(sn.docs.map(d => A.deleteDoc(d.ref))); return sn.docs.length; };
+    say('Deleting your recipes…');  await delAll(A.query(A.collection(db, 'recipes'), A.where('ownerId', '==', uid)));
+    say('Deleting your messages…');
+    await delAll(A.query(A.collection(db, 'messages'), A.where('toUid', '==', uid)));
+    await delAll(A.query(A.collection(db, 'messages'), A.where('fromUid', '==', uid)));
+    say('Removing your profile…');
+    if (email) { try { await A.deleteDoc(A.doc(db, 'directory', emailKey(email))); } catch (e) { console.error(e); } }
+    await A.deleteDoc(A.doc(db, 'users', uid));
+  }
+  function openDeleteAccount() {
+    const old = document.getElementById('delDlg'); if (old) old.remove();
+    const ov = document.createElement('div'); ov.className = 'gm-overlay'; ov.id = 'delDlg';
+    const box = el('div', 'gm-box'); box.setAttribute('role', 'dialog'); box.setAttribute('aria-modal', 'true'); box.setAttribute('aria-labelledby', 'dlTitle');
+    let working = false;
+    const close = () => { if (working) return; document.removeEventListener('keydown', onKey); ov.remove(); };
+    const onKey = e => { if (e.key === 'Escape') close(); };
+    ov.addEventListener('click', e => { if (e.target === ov) close(); });
+    const h = el('h2', null, 'Delete your account?'); h.id = 'dlTitle'; box.appendChild(h);
+    box.appendChild(el('p', 'gm-small', 'This permanently deletes:'));
+    const ul = el('ul', 'del-list');
+    ['All of your recipes, including public ones. Links to them will stop working.', 'Every message you sent or received.', 'Your kitchen, planner, shopping list, packs and blocked list.', 'Your sign-in account.'].forEach(t => ul.appendChild(el('li', null, t)));
+    box.appendChild(ul);
+    box.appendChild(el('p', 'f-hint', 'Copies of your recipes that other people already saved to their own Recipe Book stay with them. Reports you filed stay with the admin. You’ll be asked to sign in with Google once more to confirm it’s you.'));
+    const lab = el('label', 'send-lab', 'Type DELETE to confirm'); lab.setAttribute('for', 'dlConfirm');
+    const inp = el('input', 'send-in'); inp.id = 'dlConfirm'; inp.autocomplete = 'off'; inp.autocapitalize = 'characters';
+    const st = el('p', 'send-err'); st.setAttribute('role', 'alert');
+    const acts = el('div', 'send-acts');
+    const go = el('button', 'btn-danger', 'Delete everything'); go.type = 'button'; go.disabled = true; go.style.flex = '1'; go.style.width = 'auto';
+    const cn = el('button', 'btn-ghost', 'Cancel'); cn.type = 'button'; cn.addEventListener('click', close);
+    inp.addEventListener('input', () => { go.disabled = inp.value.trim().toUpperCase() !== 'DELETE'; });
+    go.addEventListener('click', async () => {
+      if (working || inp.value.trim().toUpperCase() !== 'DELETE') return;
+      const user = fbAuth && fbAuth.currentUser; if (!user || !mailReady()) { st.textContent = 'You need to be signed in and online.'; return; }
+      working = true; go.disabled = cn.disabled = inp.disabled = true; st.style.color = 'var(--ink)'; st.textContent = 'Confirming it’s you…';
+      const uid = user.uid, email = user.email;
+      try { await fbApi.reauthenticateWithPopup(user, new fbApi.GoogleAuthProvider()); }
+      catch (e) {
+        working = false; cn.disabled = inp.disabled = false; go.disabled = inp.value.trim().toUpperCase() !== 'DELETE'; st.style.color = '';
+        st.textContent = e.code === 'auth/user-mismatch' ? 'That was a different Google account. Sign in with the account you’re deleting.' :
+          (e.code === 'auth/popup-closed-by-user' || e.code === 'auth/cancelled-popup-request') ? 'Cancelled. Nothing was deleted.' : 'Couldn’t confirm your sign-in (' + (e.code || 'error') + '). Nothing was deleted.';
+        return;
+      }
+      try { await wipeUserData(uid, email, t => { st.textContent = t; }); }
+      catch (e) {
+        console.error(e); working = false; cn.disabled = false; st.style.color = '';
+        st.textContent = 'Something went wrong while deleting (' + (e.code || 'error') + '). Some data may be gone. Your account is still active, so you can try again.'; return;
+      }
+      try { st.textContent = 'Deleting your account…'; await fbApi.deleteUser(user); }
+      catch (e) {
+        console.error(e); working = false; cn.disabled = false; st.style.color = '';
+        st.textContent = 'Your data was deleted, but the sign-in account couldn’t be removed (' + (e.code || 'error') + '). Tap Delete everything again to retry.'; go.disabled = false; return;
+      }
+      try { localStorage.removeItem('hp_guest_asked_' + uid); } catch (e) {}
+      working = false; document.removeEventListener('keydown', onKey); ov.remove();
+      inbox = []; sentBox = []; reportBox = []; blockedUids = []; blockedNames = []; mailOpenId = null; updateMailBadge();
+      showView('home'); toast('Your account and data were deleted.');
+    });
+    acts.appendChild(go); acts.appendChild(cn);
+    [lab, inp, st, acts].forEach(x => box.appendChild(x));
+    ov.appendChild(box); document.body.appendChild(ov); document.addEventListener('keydown', onKey); setTimeout(() => inp.focus(), 30);
+  }
+  document.getElementById('delAcctBtn').addEventListener('click', openDeleteAccount);
 
   /* ===== Guest data: offer to copy what someone set up before signing in ===== */
   function guestSnapshot() {
@@ -3386,7 +3623,7 @@
   /* ===== Versioning / cache-busting =====
      Bump APP_VERSION on every upload. Running copies compare themselves to the
      live index.html (fetched with no-store) and reload once if it differs. */
-  const APP_VERSION = '2026-11-13.32';
+  const APP_VERSION = '2026-11-13.35';
   (function () {
     const label = document.getElementById('appVer');
     if (label) label.textContent = 'Home Plate v' + APP_VERSION;
