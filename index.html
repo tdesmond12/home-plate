@@ -744,6 +744,8 @@
   .have-ic { width: 22px; height: 22px; flex: none; margin-top: 1px; border-radius: 50%; background: #eef3e6; border: 1.5px solid #b9ceb0; color: var(--green); display: grid; place-items: center; }
   .have-ic .ico { width: 13px; height: 13px; stroke-width: 3; }
   #shopBody .seg { margin-bottom: 14px; }
+  .view-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+  .view-head .share-ico { flex: none; margin-top: 4px; }
   .shop-count { font-size: 14px; color: var(--muted); margin: 2px 0 8px; }
   .shop-list { list-style: none; margin: 0; padding: 0; }
   .shop-item { border-bottom: 1px solid var(--line); }
@@ -864,6 +866,7 @@
   <symbol id="i-cap" viewBox="0 0 24 24"><path d="M5 15a7 7 0 0 1 14 0"/><path d="M3 15.5h18c0 2-3 3-9 3s-9-1-9-3z"/><path d="M12 8.5v7"/><circle cx="12" cy="7.2" r=".7"/></symbol>
   <symbol id="i-spatula" viewBox="0 0 24 24"><rect x="8" y="3" width="8" height="9" rx="2"/><path d="M10.5 5.5v4M13.5 5.5v4"/><path d="M12 12v9"/></symbol>
   <symbol id="i-mail" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></symbol>
+  <symbol id="i-print" viewBox="0 0 24 24"><path d="M7 9V4h10v5"/><rect x="4" y="9" width="16" height="8" rx="2"/><path d="M7 14h10v6H7z"/></symbol>
   <symbol id="i-pencil" viewBox="0 0 24 24"><path d="M4 20l1.2-4.4L16.6 4.2a2.2 2.2 0 0 1 3.1 0l.1.1a2.2 2.2 0 0 1 0 3.1L8.4 18.8z"/><path d="M14.5 6.3l3.2 3.2"/></symbol>
   <symbol id="i-share" viewBox="0 0 24 24"><circle cx="6" cy="12" r="2.6"/><circle cx="18" cy="5.5" r="2.6"/><circle cx="18" cy="18.5" r="2.6"/><path d="M8.3 10.8l7.4-4M8.3 13.2l7.4 4"/></symbol>
   <symbol id="i-tag" viewBox="0 0 24 24"><path d="M3 12V4h8l10 10-8 8z"/><circle cx="7.5" cy="8.5" r="1.2"/></symbol>
@@ -956,8 +959,7 @@
 
       <!-- SHOPPING LIST -->
       <section class="view" id="shopping">
-        <h1>Shopping List</h1>
-        <p class="sub">Everything you need to pick up</p>
+        <div class="view-head"><div><h1>Shopping List</h1><p class="sub">Everything you need to pick up</p></div><button type="button" class="share-ico" id="shopExport" aria-label="Share, print or export your shopping list"><svg class="ico"><use href="#i-share"/></svg></button></div>
         <div id="shopBody"></div>
       </section>
 
@@ -2222,6 +2224,87 @@
     acts.appendChild(confirmBtn('Clear list', 'Tap again to clear', () => { shopItems = shopItems.filter(isOwned); saveShop(); renderShopping(); }));
     card.appendChild(acts); body.appendChild(card);
   }
+
+  /* ---- Export the shopping list: share, email, text, copy, print, or open just the list in its own window ---- */
+  function shopSections(o) {
+    const buy = shopItems.filter(i => !isOwned(i) && (o.checked || !i.checked)).sort((a, b) => (a.checked - b.checked) || cmp(a.name, b.name));
+    const have = o.have ? shopItems.filter(isOwned).sort((a, b) => cmp(a.name, b.name)) : [];
+    return { buy, have };
+  }
+  const shopDate = () => { try { return new Date().toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' }); } catch (e) { return ''; } };
+  function shopText(o) {
+    const { buy, have } = shopSections(o), L = ['Shopping List — ' + shopDate()];
+    const put = (it, mark) => { L.push(mark + ' ' + it.name); if (o.details) it.notes.forEach(nt => L.push('     ' + (nt.l ? nt.l + ' · ' : '') + nt.t)); };
+    if (buy.length) { L.push('', 'TO BUY (' + buy.length + ')'); buy.forEach(it => put(it, it.checked ? '☑' : '☐')); }
+    if (have.length) { L.push('', 'ALREADY HAVE (' + have.length + ')'); have.forEach(it => put(it, '✓')); }
+    if (!buy.length && !have.length) L.push('', '(Nothing on the list.)');
+    L.push('', 'From Home Plate Recipe Book'); return L.join('\n');
+  }
+  /* mailto: and sms: links have length limits, so long lists drop the details, then get trimmed with a note */
+  function fitLink(o) {
+    const MAX = 1700; let t = shopText(o);
+    if (encodeURIComponent(t).length <= MAX) return t;
+    t = shopText(Object.assign({}, o, { details: false })); if (encodeURIComponent(t).length <= MAX) return t;
+    const lines = t.split('\n'); let keep = lines.length;
+    while (keep > 3 && encodeURIComponent(lines.slice(0, keep).join('\n') + '\n…and more. Copy the full list from Home Plate.').length > MAX) keep--;
+    return lines.slice(0, keep).join('\n') + '\n…and more. Copy the full list from Home Plate.';
+  }
+  function shopHtml(o, autoPrint) {
+    const { buy, have } = shopSections(o), esc = x => String(x).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    const sec = (title, arr, kind) => !arr.length ? '' : '<h2>' + title + ' (' + arr.length + ')</h2><ul>' + arr.map(it => '<li class="' + (it.checked && kind === 'buy' ? 'done' : '') + '"><span class="box">' + ((it.checked && kind === 'buy') || kind === 'have' ? '✓' : '') + '</span><div><b>' + esc(it.name) + '</b>' +
+      (o.details ? it.notes.map(nt => '<small>' + esc((nt.l ? nt.l + ' · ' : '') + nt.t) + '</small>').join('') : '') + '</div></li>').join('') + '</ul>';
+    return '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Shopping List</title><style>' +
+      'body{font:18px/1.4 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;color:#111;max-width:640px;margin:0 auto;padding:24px 20px}h1{font-size:30px;margin:0}header p{margin:2px 0 0;color:#555}' +
+      'h2{font-size:15px;letter-spacing:.08em;text-transform:uppercase;color:#a23b34;margin:26px 0 6px;border-bottom:2px solid #ddd;padding-bottom:4px}ul{list-style:none;margin:0;padding:0}' +
+      'li{display:flex;gap:12px;padding:9px 0;border-bottom:1px solid #eee;break-inside:avoid}.box{flex:none;width:22px;height:22px;border:2px solid #333;border-radius:4px;text-align:center;line-height:18px;font-weight:700}' +
+      'b{font-weight:600}small{display:block;color:#555;font-size:14px}li.done b{text-decoration:line-through;color:#777}button{margin-top:14px;font:inherit;padding:8px 18px;border-radius:999px;border:2px solid #333;background:#fff;cursor:pointer}footer{margin-top:28px;color:#777;font-size:13px}' +
+      '@media print{button{display:none}body{padding:0;font-size:16px}}</style></head><body><header><h1>Shopping List</h1><p>' + esc(shopDate()) + ' · Home Plate Recipe Book</p><button onclick="window.print()">Print</button></header>' +
+      (!buy.length && !have.length ? '<p>Nothing on the list.</p>' : sec('To Buy', buy, 'buy') + sec('Already Have', have, 'have')) + '<footer>Made with Home Plate Recipe Book</footer>' +
+      (autoPrint ? '<script>setTimeout(function(){window.print()},400)<\/script>' : '') + '</body></html>';
+  }
+  function openShopExport() {
+    const old = document.getElementById('shopDlg'); if (old) old.remove();
+    const ov = document.createElement('div'); ov.className = 'gm-overlay'; ov.id = 'shopDlg';
+    const box = el('div', 'gm-box'); box.setAttribute('role', 'dialog'); box.setAttribute('aria-modal', 'true'); box.setAttribute('aria-labelledby', 'sxTitle');
+    const close = () => { document.removeEventListener('keydown', onKey); ov.remove(); };
+    const onKey = e => { if (e.key === 'Escape') close(); };
+    ov.addEventListener('click', e => { if (e.target === ov) close(); });
+    const h = el('h2', null, 'Share your shopping list'); h.id = 'sxTitle'; box.appendChild(h);
+    const o = { checked: false, have: false, details: true };
+    const opt = (key, label, sub) => {
+      const row = el('label', 'rookie-row'), cb = el('input'); cb.type = 'checkbox'; cb.checked = o[key]; const tx = el('span'); tx.appendChild(el('b', null, label)); if (sub) tx.appendChild(el('small', null, sub));
+      row.appendChild(cb); row.appendChild(tx); cb.addEventListener('change', () => { o[key] = cb.checked; refresh(); }); return row;
+    };
+    const count = el('p', 'shop-count');
+    const list = el('div', 'share-list');
+    const mk = (icon, label, tag, cls) => { const b = el(tag, cls); if (tag === 'button') b.type = 'button'; b.appendChild(svgUse(icon)); b.appendChild(document.createTextNode(label)); return b; };
+    const win = autoPrint => {
+      const w = window.open('', '_blank');
+      if (!w) { toast('Your browser blocked the new window. Allow pop-ups, or use Copy or Email.'); return; }
+      w.document.open(); w.document.write(shopHtml(o, autoPrint)); w.document.close(); close();
+    };
+    if (navigator.share) { const b = mk('i-share', 'Share…', 'button', 'btn-primary sm'); b.addEventListener('click', async () => { try { await navigator.share({ title: 'Shopping List', text: shopText(o) }); close(); } catch (e) { /* cancelled */ } }); list.appendChild(b); }
+    const em = mk('i-mail', 'Email', 'a', 'btn-ghost'), sm = mk('i-people', 'Text message', 'a', 'btn-ghost');
+    const cp = mk('i-check', 'Copy list', 'button', 'btn-ghost'); cp.addEventListener('click', async () => { const ok = await copyText(shopText(o)); close(); toast(ok ? 'List copied.' : 'Couldn’t copy. Try Email or Text.'); });
+    const pr = mk('i-print', 'Print', 'button', 'btn-ghost'); pr.addEventListener('click', () => win(true));
+    const nw = mk('i-book', 'Open in new window', 'button', 'btn-ghost'); nw.addEventListener('click', () => win(false));
+    [em, sm, cp, pr, nw].forEach(x => list.appendChild(x));
+    function refresh() {
+      const { buy, have } = shopSections(o), n = buy.length + have.length;
+      count.textContent = n ? n + ' item' + (n === 1 ? '' : 's') + ' will be included' : 'Nothing to share yet. Add items or accept a pack in the Planner.';
+      list.style.opacity = n ? '' : '.5'; list.style.pointerEvents = n ? '' : 'none';
+      em.href = 'mailto:?subject=' + encodeURIComponent('Shopping List — ' + shopDate()) + '&body=' + encodeURIComponent(fitLink(o));
+      sm.href = 'sms:?&body=' + encodeURIComponent(fitLink(o));
+    }
+    box.appendChild(count);
+    box.appendChild(opt('details', 'Show amounts and recipe names', 'Turn off for a short list of just item names.'));
+    box.appendChild(opt('checked', 'Include checked-off items'));
+    box.appendChild(opt('have', 'Include items I already have'));
+    box.appendChild(list);
+    const cl = el('button', 'btn-ghost', 'Close'); cl.type = 'button'; cl.style.marginTop = '12px'; cl.addEventListener('click', close); box.appendChild(cl);
+    refresh(); ov.appendChild(box); document.body.appendChild(ov); document.addEventListener('keydown', onKey);
+  }
+  document.getElementById('shopExport').addEventListener('click', openShopExport);
 
   /* ---- This Week ---- */
   /* An empty week also empties the randomizer (pulled cards, seen deck, results screen) and sends you back to your shelf of packs. */
@@ -3623,7 +3706,7 @@
   /* ===== Versioning / cache-busting =====
      Bump APP_VERSION on every upload. Running copies compare themselves to the
      live index.html (fetched with no-store) and reload once if it differs. */
-  const APP_VERSION = '2026-11-13.35';
+  const APP_VERSION = '2026-11-14.36';
   (function () {
     const label = document.getElementById('appVer');
     if (label) label.textContent = 'Home Plate v' + APP_VERSION;
