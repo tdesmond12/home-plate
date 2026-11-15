@@ -744,6 +744,13 @@
   .have-ic { width: 22px; height: 22px; flex: none; margin-top: 1px; border-radius: 50%; background: #eef3e6; border: 1.5px solid #b9ceb0; color: var(--green); display: grid; place-items: center; }
   .have-ic .ico { width: 13px; height: 13px; stroke-width: 3; }
   #shopBody .seg { margin-bottom: 14px; }
+  .legal h2 { margin: 26px 0 8px; }
+  .legal h3 { margin: 18px 0 6px; font-size: 17px; color: var(--navy); }
+  .legal p, .legal li { font-size: 15.5px; line-height: 1.55; }
+  .legal ul { margin: 6px 0 10px; padding-left: 22px; }
+  .legal li { margin-bottom: 4px; }
+  .legal .when { color: var(--muted); font-size: 14px; }
+  #legalLink, #legalNote a { color: var(--navy); font-weight: 600; }
   .view-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
   .view-head .share-ico { flex: none; margin-top: 4px; }
   .shop-count { font-size: 14px; color: var(--muted); margin: 2px 0 8px; }
@@ -763,6 +770,7 @@
   .shop-item { display: flex; align-items: flex-start; gap: 8px; }
   .shop-item .shop-row { flex: 1; min-width: 0; }
   .shop-item .week-x { margin-top: 7px; }
+  .shop-item .week-x + .week-x { margin-left: -2px; }
   .shop-acts { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
   .btn-ghost.sm { padding: 8px 14px; font-size: 14px; }
   .btn-ghost.warn { border-color: var(--red); color: var(--red); font-weight: 700; }
@@ -1045,15 +1053,19 @@
         <h1>My Profile</h1>
         <p class="sub">Your account and preferences</p>
         <div class="card"><h2><span class="badge"><svg class="ico"><use href="#i-cap"/></svg></span>Account</h2><div class="label left" id="acctInfo">Profile details will go here.</div><p class="acct-msg" id="acctMsg" role="status"></p><div id="acctAction"></div></div>
+        <p class="f-hint" id="legalNote">By using Home Plate you agree to the <a href="#" data-legal="terms">Terms</a> and <a href="#" data-legal="privacy">Privacy Policy</a>.</p>
         <div class="card" id="dangerCard" hidden><h2><span class="badge"><svg class="ico"><use href="#i-x"/></svg></span>Delete account</h2><p class="f-hint">Permanently delete your account and everything you have stored in Home Plate. This can’t be undone.</p><button type="button" class="btn-danger" id="delAcctBtn">Delete my account and data</button></div>
       </section>
 
       <section class="view" id="messages"><div id="mailBody"></div></section>
 
+      <section class="view" id="legal"><div id="legalBody"></div></section>
+
       
 
     </div>
     <p class="ver" id="appVer"></p>
+    <p class="ver"><a href="#" id="legalLink">Privacy &amp; Terms</a></p>
   </main>
 
   <nav aria-label="Primary">
@@ -1613,7 +1625,17 @@
       const li = el('li'); const lab = el('label', 'ing'); const cb = el('input'); cb.type = 'checkbox';
       lab.appendChild(cb); lab.appendChild(el('span', null, t)); li.appendChild(lab); ul.appendChild(li);
     });
-    ic.appendChild(ul); body.appendChild(ic);
+    ic.appendChild(ul);
+    const addb = el('button', 'btn-ghost sm'); addb.type = 'button'; addb.style.marginTop = '12px';
+    const setAddLabel = t => { addb.textContent = ''; addb.appendChild(svgUse('i-cart')); addb.appendChild(document.createTextNode(' ' + t)); };
+    setAddLabel('Add to shopping list');
+    addb.addEventListener('click', () => {
+      if (addb.dataset.done) { showView('shopping'); return; }
+      const res = addToShopping([r], true), n = res.buy + res.have;
+      toast(n ? n + ' ingredient' + (n === 1 ? '' : 's') + ' added' + (res.have ? ' (' + res.have + ' already in your kitchen)' : '') + '.' : 'Everything is already on your list.');
+      addb.dataset.done = '1'; setAddLabel('View shopping list');
+    });
+    ic.appendChild(addb); body.appendChild(ic);
 
     // directions
     const dc = cardEl('i-spatula', 'Directions', false); const ol = el('ol', 'steps');
@@ -2115,7 +2137,7 @@
   const cleanWeek = v => cleanList(v, m => m && typeof m.rid === 'string' ? { rid: cleanStr(m.rid, 80), title: cleanStr(m.title, 150) } : null).slice(0, 60);
   const cleanShop = v => cleanList(v, it => it && typeof it.key === 'string' && typeof it.name === 'string'
     ? { key: cleanStr(it.key, 80), name: cleanStr(it.name, 80), checked: !!it.checked, manual: !!it.manual,
-        notes: cleanList(it.notes, x => x && typeof x.r === 'string' ? { r: cleanStr(x.r, 80), t: cleanStr(x.t, 150), l: cleanStr(x.l, 150) } : null).slice(0, 8) } : null).slice(0, 300);
+        notes: cleanList(it.notes, x => x && typeof x.r === 'string' ? { r: cleanStr(x.r, 80), t: cleanStr(x.t, 150), l: cleanStr(x.l, 150), d: !!x.d } : null).slice(0, 8) } : null).slice(0, 300);
   function newPackId() { return 'p' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5); }
   let myPacks = cleanPacks(readLS('hp_packs', '[]')), weekMeals = cleanWeek(readLS('hp_week', '[]')), shopItems = cleanShop(readLS('hp_shop', '[]'));
   function persist(field, value, ls) { if (typeof dbUserReady === 'function' && dbUserReady()) dbSaveUser({ [field]: value }); else writeLS(ls, value); }
@@ -2138,13 +2160,14 @@
     return String(lines.find(l => String(l).toLowerCase().includes(nm)) || '');
   }
   /* Every ingredient of an accepted meal goes on the list. Whether it shows under "To Buy" or "Have" is decided live from My Kitchen. */
-  function addToShopping(recipes) {
+  function addToShopping(recipes, direct) {
     let buy = 0, have = 0;
     recipes.forEach(r => ingItems(r).forEach(it => {
       const key = canonKey(it.n); if (!key) return;
       let item = shopItems.find(x => !x.manual && x.key === key);
       if (!item) { const nm = it.n.trim(); item = { key, name: nm.charAt(0).toUpperCase() + nm.slice(1), checked: false, notes: [] }; shopItems.push(item); if (pantryKeys.includes(key)) have++; else buy++; }
-      if (!item.notes.some(x => x.r === r.id)) item.notes.push({ r: r.id, t: cleanStr(r.title, 150), l: cleanStr(recipeLineFor(r, it), 150) });
+      const had = item.notes.find(x => x.r === r.id);
+      if (!had) item.notes.push({ r: r.id, t: cleanStr(r.title, 150), l: cleanStr(recipeLineFor(r, it), 150), d: !!direct }); else if (direct) had.d = true;   // d = added straight from the recipe, so taking the meal off This Week keeps it
       item.notes = item.notes.slice(0, 8);
     }));
     shopItems = shopItems.slice(0, 300); saveShop(); renderShopping(); return { buy, have };
@@ -2161,7 +2184,7 @@
   function dropFromShopping(rids) {
     if (!rids.length) return;
     const gone = new Set(rids);
-    shopItems.forEach(i => { if (!i.manual) i.notes = i.notes.filter(n => !gone.has(n.r)); });
+    shopItems.forEach(i => { if (!i.manual) i.notes = i.notes.filter(n => !gone.has(n.r) || n.d); });
     shopItems = shopItems.filter(i => i.manual || i.notes.length);
     saveShop(); renderShopping();
   }
@@ -2187,7 +2210,12 @@
         have.slice().sort((a, b) => cmp(a.name, b.name)).forEach(it => {
           const li = el('li', 'shop-item'), row = el('div', 'shop-row have'), ic = el('span', 'have-ic'); ic.appendChild(svgUse('i-check'));
           const tx = el('span', 'shop-tx'); tx.appendChild(el('b', null, it.name)); it.notes.forEach(nt => tx.appendChild(el('small', null, (nt.l ? nt.l + ' \u00b7 ' : '') + nt.t)));
-          row.appendChild(ic); row.appendChild(tx); li.appendChild(row); ul.appendChild(li);
+          row.appendChild(ic); row.appendChild(tx); li.appendChild(row);
+          const need = el('button', 'week-x'); need.type = 'button'; need.title = 'Move back to To Buy'; need.setAttribute('aria-label', 'I need ' + it.name + ' (move to To Buy)'); need.appendChild(svgUse('i-cart'));
+          need.addEventListener('click', () => { pantryKeys = pantryKeys.filter(k => k !== it.key); savePantry(); renderKitchen(); renderShopping(); toast(it.name + ' moved to To Buy.'); }); li.appendChild(need);
+          const rm = el('button', 'week-x'); rm.type = 'button'; rm.title = 'Remove from the list'; rm.setAttribute('aria-label', 'Remove ' + it.name + ' from the list'); rm.appendChild(svgUse('i-x'));
+          rm.addEventListener('click', () => { shopItems = shopItems.filter(x => x !== it); saveShop(); renderShopping(); }); li.appendChild(rm);
+          ul.appendChild(li);
         });
         card.appendChild(ul);
       }
@@ -2204,6 +2232,7 @@
     if (!buy.length) { card.appendChild(emptyBox('Nothing to buy. Type in anything you need, or accept a pack in the Planner and whatever you are missing lands here.')); body.appendChild(card); return; }
     const done = buy.filter(i => i.checked).length;
     card.appendChild(el('p', 'shop-count', (buy.length - done) + ' to pick up' + (done ? ' \u00b7 ' + done + ' checked off' : '')));
+    if (buy.some(i => !i.manual)) card.appendChild(el('p', 'f-hint', 'Tap ✓ if you already have it (moves it to Have). Tap ✕ to remove it.'));
     const ul = el('ul', 'shop-list');
     buy.slice().sort((a, b) => (a.checked - b.checked) || cmp(a.name, b.name)).forEach(it => {
       const li = el('li', 'shop-item' + (it.checked ? ' done' : '')), lab = el('label', 'shop-row'), cb = el('input'); cb.type = 'checkbox'; cb.checked = it.checked;
@@ -2212,10 +2241,12 @@
       if (it.manual) tx.appendChild(el('small', null, 'Added by you'));
       it.notes.forEach(nt => tx.appendChild(el('small', null, (nt.l ? nt.l + ' \u00b7 ' : '') + nt.t)));
       lab.appendChild(cb); lab.appendChild(tx); li.appendChild(lab);
-      if (it.manual) {
-        const x = el('button', 'week-x'); x.type = 'button'; x.setAttribute('aria-label', 'Remove ' + it.name + ' from the list'); x.appendChild(svgUse('i-x'));
-        x.addEventListener('click', () => { shopItems = shopItems.filter(s => s !== it); saveShop(); renderShopping(); }); li.appendChild(x);
+      if (!it.manual) {
+        const hv = el('button', 'week-x'); hv.type = 'button'; hv.title = 'I already have this'; hv.setAttribute('aria-label', 'I already have ' + it.name + ' (move to Have)'); hv.appendChild(svgUse('i-check'));
+        hv.addEventListener('click', () => { if (!pantryKeys.includes(it.key)) { pantryKeys = pantryKeys.concat(it.key); savePantry(); } renderKitchen(); renderShopping(); toast(it.name + ' marked as in your kitchen.'); }); li.appendChild(hv);
       }
+      const x = el('button', 'week-x'); x.type = 'button'; x.title = 'Remove from the list'; x.setAttribute('aria-label', 'Remove ' + it.name + ' from the list'); x.appendChild(svgUse('i-x'));
+      x.addEventListener('click', () => { shopItems = shopItems.filter(s => s !== it); saveShop(); renderShopping(); }); li.appendChild(x);
       ul.appendChild(li);
     });
     card.appendChild(ul);
@@ -3599,6 +3630,73 @@
   }
   document.getElementById('delAcctBtn').addEventListener('click', openDeleteAccount);
 
+  /* ===== Privacy Policy and Terms of Use ===== */
+  const LEGAL_UPDATED = 'November 14, 2026';
+  const CONTACT_EMAIL = 'tdesmond12@gmail.com';   // shown on the Privacy page for privacy questions; change it here
+  const LEGAL = {
+    privacy: { title: 'Privacy Policy', body: [
+      ['h', 'The short version'],
+      ['p', 'Home Plate Recipe Book is a personal project, not a company. You can use it without an account. If you sign in, your recipes and settings are saved to your account so they follow you between devices. We don’t run ads and we don’t sell your information.'],
+      ['h', 'What we store'],
+      ['p', 'Without an account (guest), your kitchen, planner, shopping list and packs stay on your own device, in your browser’s storage. We never receive them.'],
+      ['p', 'When you sign in with Google, we store:'],
+      ['ul', ['Your Google account name and a unique account ID.', 'Your email address, used only so other signed-in users can send you a recipe by entering it. Nobody can browse a list of emails, and the lookup only confirms whether an address belongs to a Home Plate user and shows your name to the sender.', 'Your recipes: the ingredients, directions, credit, and whether each is public or private. If you import from photos, only the text read from them is saved, not the photos. Your name is saved with each recipe and may be shown on public ones.', 'Your kitchen (ingredients you have), planner, shopping list, saved packs, hidden recipes and blocked senders.', 'Messages you send and receive, which contain a copy of the shared recipe and an optional note.', 'Reports you file about messages or recipes.']],
+      ['h', 'Who can see what'],
+      ['ul', ['Private recipes: only you.', 'Public recipes: anyone who uses the app or opens a link to the recipe.', 'Messages: only the person who sent it and the person who received it.', 'Reports: only the app’s administrator.', 'Your kitchen, planner, shopping list, packs and blocked list: only you.']],
+      ['h', 'Gemini (Google’s AI)'],
+      ['p', 'When you import a recipe from a link or from photos, or save a recipe so its ingredient names can be tidied, the recipe text, web address or photos are sent to Google’s Gemini service through Firebase AI Logic to read them. That content is handled under Google’s own terms and privacy policy. Don’t upload photos or text you don’t want processed this way.'],
+      ['h', 'Services we use'],
+      ['p', 'Home Plate runs on Google Firebase (sign-in, database, AI and abuse protection, which may use Google reCAPTCHA) and is hosted on GitHub Pages. These providers process data to run the service and have their own privacy policies. We don’t use advertising or analytics trackers.'],
+      ['h', 'Your choices'],
+      ['ul', ['Edit a recipe or change it between public and private any time. Credit to an original creator can’t be changed after saving.', 'Delete messages, block senders and report content from the Messages screen.', 'Delete everything: Profile, then “Delete my account and data.” This permanently removes your recipes (including public ones), messages sent and received, your kitchen, planner, shopping list, packs, and your sign-in account. Copies that other people already saved to their own Recipe Book stay with them, and reports you filed stay with the administrator for moderation.']],
+      ['h', 'Children'],
+      ['p', 'Home Plate isn’t meant for children under 13, and we don’t knowingly collect their information.'],
+      ['h', 'Changes and contact'],
+      ['p', 'If this policy changes, the date at the top of this page will change. Questions or requests about your information: ' + CONTACT_EMAIL + '.']
+    ] },
+    terms: { title: 'Terms of Use', body: [
+      ['h', 'Using Home Plate'],
+      ['p', 'Home Plate Recipe Book is a free personal project, provided as is. By using it you agree to these terms. If you don’t agree, please don’t use it.'],
+      ['h', 'Keep it family friendly'],
+      ['ul', ['No profanity, slurs, harassment, hate or sexual content in recipes, descriptions, categories, names or messages.', 'No spam or junk, and don’t send messages to people who don’t want them.', 'Don’t impersonate others or post anything illegal.']],
+      ['p', 'Strike called! 3 strikes and you’re out! The app blocks some language automatically, but that isn’t perfect. The administrator may remove content, hide it, or end access to accounts that break these rules, without notice.'],
+      ['h', 'Your recipes and credit'],
+      ['ul', ['You keep ownership of recipes you create. By making a recipe public, you let others view it, save a copy to their own Recipe Book, and share it through Home Plate.', 'Only post recipes you wrote or have the right to share. When a recipe comes from someone else, credit the original creator. Credit can’t be edited after saving.', 'Don’t copy other people’s books or websites wholesale. If you’re a creator and want a recipe removed, use Report on the recipe or contact us.']],
+      ['h', 'Messages, blocking and reports'],
+      ['p', 'You can send a recipe to another Home Plate user by entering their email. Recipients can delete messages, block you and report messages. You can report public recipes and messages that break these rules.'],
+      ['h', 'Cook safely'],
+      ['p', 'Recipes are written by users and aren’t checked by experts. Food safety, cooking times, allergies and dietary needs are your responsibility. Always check ingredients for allergens and cook food to safe temperatures. Information from AI (such as imported recipes and ingredient tidying) can be wrong, so read it before you cook.'],
+      ['h', 'No warranty, limited liability'],
+      ['p', 'Home Plate is provided “as is,” without promises that it will always work, be free of errors or keep your data forever. Back up recipes you can’t lose. To the extent the law allows, the creator isn’t liable for losses or injuries from using the app or its recipes.'],
+      ['h', 'Ending your account'],
+      ['p', 'You can delete your account and data any time from your Profile. See the Privacy Policy for what that removes.'],
+      ['h', 'Changes'],
+      ['p', 'These terms may change. The date at the top will change when they do, and continuing to use Home Plate means you accept the update.']
+    ] }
+  };
+  let legalFrom = 'home';
+  function openLegal(which) {
+    const cur = document.querySelector('.view.active'); if (cur && cur.id !== 'legal') legalFrom = cur.id;
+    renderLegal(which === 'terms' ? 'terms' : 'privacy'); showView('legal');
+  }
+  function renderLegal(which) {
+    const body = document.getElementById('legalBody'); body.textContent = ''; body.className = 'legal';
+    body.appendChild(backBtn('Back', () => showView(legalFrom)));
+    body.appendChild(el('h1', null, LEGAL[which].title)); body.appendChild(el('p', 'when', 'Last updated ' + LEGAL_UPDATED));
+    const seg = el('div', 'seg'); seg.setAttribute('role', 'tablist');
+    [['privacy', 'Privacy Policy'], ['terms', 'Terms of Use']].forEach(([k, label]) => {
+      const b = el('button', which === k ? 'on' : null, label); b.type = 'button'; b.setAttribute('role', 'tab'); b.setAttribute('aria-selected', which === k); b.addEventListener('click', () => { renderLegal(k); window.scrollTo(0, 0); }); seg.appendChild(b);
+    });
+    body.appendChild(seg);
+    LEGAL[which].body.forEach(([t, v]) => {
+      if (t === 'h') body.appendChild(el('h3', null, v));
+      else if (t === 'p') body.appendChild(el('p', null, v));
+      else { const ul = el('ul'); v.forEach(x => ul.appendChild(el('li', null, x))); body.appendChild(ul); }
+    });
+  }
+  document.getElementById('legalLink').addEventListener('click', e => { e.preventDefault(); openLegal('privacy'); });
+  document.querySelectorAll('[data-legal]').forEach(a => a.addEventListener('click', e => { e.preventDefault(); openLegal(a.dataset.legal); }));
+
   /* ===== Guest data: offer to copy what someone set up before signing in ===== */
   function guestSnapshot() {
     return {
@@ -3706,7 +3804,7 @@
   /* ===== Versioning / cache-busting =====
      Bump APP_VERSION on every upload. Running copies compare themselves to the
      live index.html (fetched with no-store) and reload once if it differs. */
-  const APP_VERSION = '2026-11-14.36';
+  const APP_VERSION = '2026-11-14.38';
   (function () {
     const label = document.getElementById('appVer');
     if (label) label.textContent = 'Home Plate v' + APP_VERSION;
