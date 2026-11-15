@@ -2606,7 +2606,7 @@
   const MAX_PHOTOS = 6;
   let addState = null;
   const addBody = document.getElementById('addBody');
-  document.getElementById('addRecipeBtn').addEventListener('click', openAddRecipe);
+  document.getElementById('addRecipeBtn').addEventListener('click', () => openAddRecipe());
 
   function editPrefill(r) {
     return { editId: r.id, title: r.title, blurb: r.blurb || '', prep: r.prep || 0, cook: r.cook || 0, servings: r.servings || 1, difficulty: r.difficulty || 0, tool: toolById(r.tool) ? r.tool : '',
@@ -2614,7 +2614,7 @@
       sourceName: r.sourceName || '', sourceUrl: r.sourceUrl || '', sourceNote: r.sourceNote || '' };
   }
   function openAddRecipe(pre) {
-    addState = { mode: 'type', cats: [], tool: '', diff: 0, vis: 'private', style: 'classic', rookie: true, photos: [], busy: false, imported: null, prefill: pre || null };
+    addState = { mode: 'type', cats: [], tool: '', diff: 0, vis: 'private', style: 'classic', rookie: true, photos: [], busy: false, imported: null, prefill: (pre && typeof pre.title === 'string' && Array.isArray(pre.ingredients)) ? pre : null };
     renderAdd(); showView('addrecipe'); window.scrollTo(0, 0);
   }
 
@@ -3804,7 +3804,7 @@
   /* ===== Versioning / cache-busting =====
      Bump APP_VERSION on every upload. Running copies compare themselves to the
      live index.html (fetched with no-store) and reload once if it differs. */
-  const APP_VERSION = '2026-11-14.38';
+  const APP_VERSION = '2026-11-14.39';
   (function () {
     const label = document.getElementById('appVer');
     if (label) label.textContent = 'Home Plate v' + APP_VERSION;
