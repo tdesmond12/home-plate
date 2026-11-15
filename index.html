@@ -772,6 +772,28 @@
   .shop-item .week-x { margin-top: 7px; }
   .shop-item .week-x + .week-x { margin-left: -2px; }
   .shop-acts { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
+  .shop-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 4px 0 10px; }
+  .shop-tools .seg { flex: 1 1 210px; margin: 0; }
+  .shop-tools .seg button { padding: 8px 10px; font-size: 14px; }
+  .shop-sec { display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 10px; margin: 18px 0 2px; padding-bottom: 4px; border-bottom: 2px solid var(--line); font-size: 15px; letter-spacing: .04em; text-transform: uppercase; color: var(--red); }
+  .shop-sec:first-of-type { margin-top: 8px; }
+  .shop-sec .aisle-tag { font-size: 12.5px; letter-spacing: 0; text-transform: none; font-weight: 700; color: #fff; background: var(--navy); border-radius: 999px; padding: 2px 10px; }
+  .shop-sec .sec-n { margin-left: auto; font-size: 13px; letter-spacing: 0; color: var(--muted); font-weight: 600; }
+  .sec-pick { display: block; margin-top: 4px; font: inherit; font-size: 12.5px; color: var(--muted); background: transparent; border: 1px solid var(--line); border-radius: 999px; padding: 2px 6px; max-width: 100%; }
+  .store-box { max-height: 88vh; overflow-y: auto; }
+  .store-top { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin: 2px 0 6px; }
+  .store-sel { flex: 1 1 140px; min-width: 0; font: inherit; font-size: 15px; font-weight: 600; color: var(--navy); background: #fff; border: 1.5px solid #e2d3ab; border-radius: 999px; padding: 8px 12px; }
+  .shop-tools .store-sel { flex: 1 1 140px; }
+  .pick-row { display: flex; align-items: center; gap: 6px; margin-top: 4px; flex-wrap: wrap; }
+  .pick-row .sec-pick { display: inline-block; margin-top: 0; flex: 1 1 130px; }
+  .shop-row input.aisle-in { flex: 0 0 auto; margin-top: 0; accent-color: auto; cursor: text; height: auto; }
+  .shop-row input.aisle-in, .aisle-in { width: 84px; font: inherit; font-size: 12.5px; color: var(--navy); background: #fff; border: 1px solid var(--line); border-radius: 999px; padding: 3px 10px; }
+  .store-name { width: 100%; box-sizing: border-box; font: inherit; font-size: 16px; padding: 10px 14px; border: 1.5px solid #e2d3ab; border-radius: 999px; background: #fff; color: var(--ink); margin: 4px 0 10px; }
+  .store-row { display: flex; align-items: center; gap: 6px; padding: 5px 0; border-bottom: 1px solid var(--line); }
+  .store-nm { flex: 1; min-width: 0; font-weight: 600; color: var(--navy); font-size: 15px; }
+  .store-row input { width: 92px; flex: none; font: inherit; font-size: 15px; padding: 7px 10px; border: 1.5px solid #e2d3ab; border-radius: 10px; background: #fff; color: var(--ink); }
+  .store-mv { flex: none; width: 34px; height: 34px; border-radius: 50%; border: 1.5px solid var(--line); background: #fff; color: var(--navy); font-size: 16px; line-height: 1; cursor: pointer; }
+  .store-mv:disabled { opacity: .3; cursor: default; }
   .btn-ghost.sm { padding: 8px 14px; font-size: 14px; }
   .btn-ghost.warn { border-color: var(--red); color: var(--red); font-weight: 700; }
   .week-list { list-style: none; margin: 0; padding: 0; }
@@ -2135,13 +2157,85 @@
   }
   const cleanPacks = v => cleanList(v, cleanPack).slice(0, 12);
   const cleanWeek = v => cleanList(v, m => m && typeof m.rid === 'string' ? { rid: cleanStr(m.rid, 80), title: cleanStr(m.title, 150) } : null).slice(0, 60);
+  /* ---- Store sections: every shopping item is sorted into a section of the store ---- */
+  const SECTIONS = [['produce', 'Produce'], ['bakery', 'Bakery'], ['meat', 'Meat & Seafood'], ['dairy', 'Dairy & Eggs'], ['frozen', 'Frozen'], ['canned', 'Canned & Jarred'], ['dry', 'Pasta, Rice & Dry Goods'],
+    ['baking', 'Baking'], ['spices', 'Spices'], ['sauces', 'Oils, Sauces & Condiments'], ['drinks', 'Drinks'], ['household', 'Household'], ['other', 'Other']];
+  const SEC_IDS = SECTIONS.map(x => x[0]), SEC_LABEL = {}; SECTIONS.forEach(x => { SEC_LABEL[x[0]] = x[1]; });
+  /* First match wins, so the order of these rules matters (for example "tomato paste" is checked before plain "tomato"). */
+  const SEC_RULES = [
+    ['produce', /(lemon|lime) juice|green bean|string bean|bean sprout|green onion|bell pepper|sweet potato|sugar snap|snap pea|snow pea|jalape|serrano|poblano|habanero|chile pepper|fresh (basil|parsley|mint|dill|cilantro|thyme|rosemary|sage|chive)/],
+    ['household', /paper towel|toilet paper|napkin|aluminum foil|\bfoil\b|plastic wrap|trash bag|garbage bag|zip.?lock|sandwich bag|dish soap|detergent|sponge|parchment|wax paper|\bsoap\b|bleach|cleaner|tissue|light bulb|paper plate|plastic cup|toothpaste|shampoo/],
+    ['frozen', /\bfrozen\b|ice cream|popsicle|sorbet|gelato|tater tot|hash brown/],
+    ['baking', /chocolate chip|cocoa|cream of tartar|vanilla|bread flour|cake flour|baking (powder|soda|chocolate)/],
+    ['canned', /\bcream of\b|tomato (paste|sauce)|(diced|crushed|stewed|canned|whole|petite) tomato|\bcanned\b|\bbroth\b|\bstock\b|bouillon|coconut (milk|cream)|chickpea|garbanzo|\bbeans?\b|refried|\bsoup\b|\btuna\b|\bolives\b|kalamata|\bpickles?\b|\bsalsa\b|evaporated milk|condensed milk|artichoke heart|water chestnut/],
+    ['spices', /\bsalt\b|^(ground |cracked |fresh |black |white )?pepper$|black pepper|white pepper|peppercorn|\bcumin\b|paprika|oregano|cinnamon|nutmeg|(chili|chile|garlic|onion|curry) powder|cayenne|turmeric|\bthyme\b|rosemary|bay lea(f|ves)|\bcurry\b|coriander|seasoning|allspice|cardamom|saffron|pepper flake|chili flake|garam masala|\bspices?\b|\bsage\b|fennel seed|mustard seed|ground (ginger|cloves?|mustard)|dried (basil|parsley|mint|dill|chives?|cilantro)/],
+    ['sauces', /\boil\b|vinegar|ketchup|catsup|mustard|mayo|dressing|\bhoney\b|syrup|\bjam\b|jelly|tahini|\bpesto\b|\bsauce\b|marinara|relish|molasses|miso|gochujang|harissa|worcestershire|sriracha|tabasco|(peanut|almond|nut|cashew|sunflower|apple) butter/],
+    ['dry', /noodle|pasta|spaghetti|macaroni|penne|rotini|fettuccine|linguine|lasagna|orzo|ramen|breadcrumb|bread crumb|panko|\bchips\b|cracker|pretzel|popcorn|granola|cereal/],
+    ['bakery', /\b(?:breads?|buns?|rolls?|tortillas?|bagels?|pitas?|naan|baguettes?|croissants?|english muffins?|muffins?|ciabatta|brioche|sourdough|flatbread|biscuits?|cakes?|donuts?|doughnuts?|pie crust)\b/],
+    ['meat', /\b(?:chicken|beef|pork|turkey|sausages?|bacon|ham|steaks?|lamb|veal|salmon|shrimps?|fish|cod|tilapia|halibut|crab|lobster|scallops?|clams?|mussels?|hot dogs?|ribs?|brisket|prosciutto|pepperoni|salami|chorizo|meatballs?|roasts?|tenderloin|drumsticks?|wings?|thighs?|breasts?|bratwurst|anchov(?:y|ies)|sardines?|duck|bison|venison|patty|patties|jerky|hamburger|burgers?)\b/],
+    ['dairy', /\b(?:milk|buttermilk|cheese|cheddar|mozzarella|parmesan|ricotta|feta|brie|gouda|provolone|mascarpone|butter|eggs?|yogurt|yoghurt|cream|half and half|half & half|kefir|creamer|cottage|whipped topping|margarine|tofu)\b/],
+    ['baking', /\b(?:flour|sugar|baking|yeast|cornstarch|cornmeal|shortening|extract|sprinkles|marshmallows?|food coloring|gelatin|pectin|frosting|icing|cake mix|pudding)\b/],
+    ['dry', /\b(?:rice|quinoa|couscous|barley|oats?|oatmeal|lentils?|nuts?|almonds?|walnuts?|pecans?|peanuts?|cashews?|pistachios?|raisins?|craisins?|farro|bulgur|polenta|grits|dried fruit|dried cranberries)\b/],
+    ['drinks', /\b(?:water|juice|soda|cola|pop|coffee|tea|beer|wine|sparkling|seltzer|lemonade|kombucha|gatorade|liquor|vodka|whiskey|rum|champagne|energy drink|sports drink|club soda|tonic)\b/],
+    ['produce', /\b(?:onions?|shallots?|leeks?|garlic|tomato(?:es)?|potato(?:es)?|carrots?|celery|lettuce|spinach|kale|arugula|cucumbers?|peppers?|broccoli|cauliflower|zucchini|squash|mushrooms?|avocados?|lemons?|limes?|apples?|bananas?|oranges?|berr(?:y|ies)|strawberr(?:y|ies)|blueberr(?:y|ies)|raspberr(?:y|ies)|grapes?|peach(?:es)?|pears?|mangos?|mangoes|pineapples?|ginger|scallions?|cabbage|corn|asparagus|eggplants?|beets?|radish(?:es)?|basil|cilantro|parsley|mint|chives?|dill|melons?|watermelon|cantaloupe|cherr(?:y|ies)|plums?|fruit|vegetables?|salad|parsnips?|turnips?|yams?|pumpkin|herbs?|bok choy|brussels sprouts?|artichokes?|okra|fennel|kiwi|grapefruit|coconut|apricots?|nectarines?|pomegranate|figs?|sprouts?|chard|collards?|romaine|endive|watercress|rhubarb|jicama|tomatillos?|microgreens)\b/]
+  ];
+  function secGuess(name) { const n = String(name || '').toLowerCase().replace(/\s+/g, ' ').trim(); for (const r of SEC_RULES) if (r[1].test(n)) return r[0]; return 'other'; }
+  /* Stores: each has the order you walk its sections in plus an aisle or area per section. Real store aisles can't be looked up, so they are typed in once. */
+  function newStoreId() { return 's' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5); }
+  function cleanOneStore(v) {
+    v = v && typeof v === 'object' ? v : {};
+    const seen = new Set(), order = (Array.isArray(v.order) ? v.order : []).filter(id => SEC_IDS.includes(id) && !seen.has(id) && seen.add(id));
+    SEC_IDS.forEach(id => { if (!seen.has(id)) order.push(id); });
+    const aisle = {}; if (v.aisle && typeof v.aisle === 'object') SEC_IDS.forEach(id => { const a = cleanStr(v.aisle[id], 20).trim(); if (a) aisle[id] = a; });
+    return { id: cleanStr(v.id, 30) || newStoreId(), name: cleanStr(v.name, 40), order, aisle };
+  }
+  function cleanStores(list, legacy) {
+    let out = (Array.isArray(list) ? list : []).filter(x => x && typeof x === 'object').slice(0, 8).map(cleanOneStore);
+    if (!out.length && legacy && typeof legacy === 'object') out = [cleanOneStore(Object.assign({}, legacy, { id: 'main' }))];   // the single layout from the first release
+    if (!out.length) out = [cleanOneStore({ id: 'main' })];   // fixed id so remembered aisles survive reloads before the stores are ever edited
+    const ids = new Set(); out.forEach(x => { if (ids.has(x.id)) x.id = newStoreId(); ids.add(x.id); });
+    return out;
+  }
+  /* What the app remembers about each ingredient across lists: its section (all stores) and its aisle (per store). Stored as arrays of objects so removals really sync. */
+  function cleanMem(v) {
+    const out = { sec: {}, aisle: {} }; v = v && typeof v === 'object' ? v : {};
+    (Array.isArray(v.sec) ? v.sec : []).slice(0, 600).forEach(x => { if (x && typeof x.k === 'string' && x.k && SEC_IDS.includes(x.s)) out.sec[cleanStr(x.k, 80)] = x.s; });
+    (Array.isArray(v.aisle) ? v.aisle : []).slice(0, 1500).forEach(x => { if (x && typeof x.st === 'string' && typeof x.k === 'string' && x.k && typeof x.a === 'string' && x.a.trim()) { const st = cleanStr(x.st, 30); (out.aisle[st] = out.aisle[st] || {})[cleanStr(x.k, 80)] = cleanStr(x.a, 20).trim(); } });
+    return out;
+  }
+  function memToDb() {
+    const aisle = []; Object.keys(shopMem.aisle).forEach(st => Object.keys(shopMem.aisle[st]).forEach(k => aisle.push({ st, k, a: shopMem.aisle[st][k] })));
+    return { sec: Object.keys(shopMem.sec).map(k => ({ k, s: shopMem.sec[k] })), aisle: aisle.slice(-1500) };
+  }
+  let stores = cleanStores(readLS('hp_stores', '[]'), readLS('hp_store', 'null'));
+  let activeStoreId = readLS('hp_active_store', '""');
+  let shopMem = cleanMem(readLS('hp_shopmem', '{}'));
+  let shopGroup = (() => { try { return localStorage.getItem('hp_shopgroup') !== '0'; } catch (e) { return true; } })();
+  const curStore = () => stores.find(x => x.id === activeStoreId) || stores[0];
+  const storeName = (x, i) => x.name || (stores.length > 1 ? 'Store ' + (i + 1) : 'My store');
+  const aisleFmt = a => !a ? '' : (/^\d+[a-z]?$/i.test(a) ? 'Aisle ' + a : a);
+  const aisleLabel = id => aisleFmt(curStore().aisle[id]);
+  const memKey = it => canonKey(it.name);
+  function secOf(it) { const m = shopMem.sec[memKey(it)]; if (m) return m; return (it.sec && SEC_IDS.includes(it.sec)) ? it.sec : secGuess(it.name); }
+  const itemAisle = it => ((shopMem.aisle[curStore().id] || {})[memKey(it)]) || '';
+  function trimMem(o, max) { const ks = Object.keys(o); for (let i = 0; i < ks.length - max; i++) delete o[ks[i]]; }
+  function setItemSec(it, id) { const k = memKey(it); if (!k) { it.sec = id; return; } if (id === secGuess(it.name)) delete shopMem.sec[k]; else shopMem.sec[k] = id; it.sec = ''; trimMem(shopMem.sec, 600); }
+  function setItemAisle(it, val) {
+    const k = memKey(it); if (!k) return; const sid = curStore().id, m = shopMem.aisle[sid] = shopMem.aisle[sid] || {}, v = cleanStr(val, 20).trim();
+    if (v) m[k] = v; else delete m[k]; trimMem(m, 500);
+  }
+  function shopGroups(arr) {
+    const by = {}; arr.forEach(it => { const id = secOf(it); (by[id] = by[id] || []).push(it); });
+    const ac = (x, y) => { const a = itemAisle(x), b = itemAisle(y); return a && b ? a.localeCompare(b, undefined, { numeric: true }) : (a ? -1 : (b ? 1 : 0)); };
+    return curStore().order.filter(id => by[id]).map(id => ({ id, label: SEC_LABEL[id], aisle: aisleLabel(id), items: by[id].sort((x, y) => (x.checked - y.checked) || ac(x, y) || cmp(x.name, y.name)) }));
+  }
   const cleanShop = v => cleanList(v, it => it && typeof it.key === 'string' && typeof it.name === 'string'
-    ? { key: cleanStr(it.key, 80), name: cleanStr(it.name, 80), checked: !!it.checked, manual: !!it.manual,
+    ? { key: cleanStr(it.key, 80), name: cleanStr(it.name, 80), checked: !!it.checked, manual: !!it.manual, sec: SEC_IDS.includes(it.sec) ? it.sec : '',
         notes: cleanList(it.notes, x => x && typeof x.r === 'string' ? { r: cleanStr(x.r, 80), t: cleanStr(x.t, 150), l: cleanStr(x.l, 150), d: !!x.d } : null).slice(0, 8) } : null).slice(0, 300);
   function newPackId() { return 'p' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5); }
   let myPacks = cleanPacks(readLS('hp_packs', '[]')), weekMeals = cleanWeek(readLS('hp_week', '[]')), shopItems = cleanShop(readLS('hp_shop', '[]'));
   function persist(field, value, ls) { if (typeof dbUserReady === 'function' && dbUserReady()) dbSaveUser({ [field]: value }); else writeLS(ls, value); }
-  const savePacks = () => persist('packs', myPacks, 'hp_packs'), saveWeek = () => persist('week', weekMeals, 'hp_week'), saveShop = () => persist('shop', shopItems, 'hp_shop');
+  const savePacks = () => persist('packs', myPacks, 'hp_packs'), saveWeek = () => persist('week', weekMeals, 'hp_week'), saveShop = () => persist('shop', shopItems, 'hp_shop'), saveStores = () => persist('stores', stores, 'hp_stores'), saveActive = () => persist('activeStore', activeStoreId, 'hp_active_store'), saveMem = () => persist('shopMemory', memToDb(), 'hp_shopmem');
   function confirmBtn(label, sure, fn, cls) {
     const b = el('button', 'btn-ghost sm ' + (cls || ''), label); b.type = 'button'; let timer = 0;
     b.addEventListener('click', () => {
@@ -2188,6 +2282,22 @@
     shopItems = shopItems.filter(i => i.manual || i.notes.length);
     saveShop(); renderShopping();
   }
+  function shopTools() {
+    const wrap = document.createElement('div'), tools = el('div', 'shop-tools'), vseg = el('div', 'seg'); vseg.setAttribute('role', 'group'); vseg.setAttribute('aria-label', 'How to arrange the list');
+    [[true, 'By store section'], [false, 'A–Z']].forEach(([g, label]) => {
+      const b = el('button', shopGroup === g ? 'on' : null, label); b.type = 'button'; b.setAttribute('aria-pressed', shopGroup === g);
+      b.addEventListener('click', () => { shopGroup = g; try { localStorage.setItem('hp_shopgroup', g ? '1' : '0'); } catch (e) {} renderShopping(); }); vseg.appendChild(b);
+    });
+    tools.appendChild(vseg); wrap.appendChild(tools);
+    const row = el('div', 'shop-tools');
+    if (stores.length > 1) {
+      const sel = el('select', 'store-sel'); sel.setAttribute('aria-label', 'Which store you are shopping at');
+      stores.forEach((x, i) => { const o = el('option', null, storeName(x, i)); o.value = x.id; sel.appendChild(o); }); sel.value = curStore().id;
+      sel.addEventListener('change', () => { activeStoreId = sel.value; saveActive(); renderShopping(); }); row.appendChild(sel);
+    }
+    const lay = el('button', 'btn-ghost sm', 'Stores & aisles'); lay.type = 'button'; lay.addEventListener('click', openStoreDlg); row.appendChild(lay);
+    wrap.appendChild(row); return wrap;
+  }
   let shopTab = 'buy';
   const isOwned = it => !it.manual && pantryKeys.includes(it.key);
   function renderShopping() {
@@ -2229,17 +2339,27 @@
     form.addEventListener('submit', e => { e.preventDefault(); if (addManualItem(inp.value)) { const n = document.getElementById('shopAdd'); if (n) { n.value = ''; n.focus(); } } });
     card.appendChild(form);
     if (hadFocus) setTimeout(() => { const n = document.getElementById('shopAdd'); if (n) n.focus(); }, 0);
-    if (!buy.length) { card.appendChild(emptyBox('Nothing to buy. Type in anything you need, or accept a pack in the Planner and whatever you are missing lands here.')); body.appendChild(card); return; }
+    if (!buy.length) { card.appendChild(shopTools()); card.appendChild(emptyBox('Nothing to buy. Type in anything you need, or accept a pack in the Planner and whatever you are missing lands here.')); body.appendChild(card); return; }
     const done = buy.filter(i => i.checked).length;
-    card.appendChild(el('p', 'shop-count', (buy.length - done) + ' to pick up' + (done ? ' \u00b7 ' + done + ' checked off' : '')));
+    card.appendChild(el('p', 'shop-count', (buy.length - done) + ' to pick up' + (done ? ' · ' + done + ' checked off' : '')));
+    card.appendChild(shopTools());
     if (buy.some(i => !i.manual)) card.appendChild(el('p', 'f-hint', 'Tap ✓ if you already have it (moves it to Have). Tap ✕ to remove it.'));
-    const ul = el('ul', 'shop-list');
-    buy.slice().sort((a, b) => (a.checked - b.checked) || cmp(a.name, b.name)).forEach(it => {
+    const rowFor = it => {
       const li = el('li', 'shop-item' + (it.checked ? ' done' : '')), lab = el('label', 'shop-row'), cb = el('input'); cb.type = 'checkbox'; cb.checked = it.checked;
       cb.addEventListener('change', () => { it.checked = cb.checked; saveShop(); renderShopping(); });
       const tx = el('span', 'shop-tx'); tx.appendChild(el('b', null, it.name));
       if (it.manual) tx.appendChild(el('small', null, 'Added by you'));
-      it.notes.forEach(nt => tx.appendChild(el('small', null, (nt.l ? nt.l + ' \u00b7 ' : '') + nt.t)));
+      it.notes.forEach(nt => tx.appendChild(el('small', null, (nt.l ? nt.l + ' · ' : '') + nt.t)));
+      if (shopGroup && !it.checked) {
+        const pr = el('span', 'pick-row'), sp = el('select', 'sec-pick'); sp.setAttribute('aria-label', 'Store section for ' + it.name);
+        SECTIONS.forEach(([id, l]) => { const o = el('option', null, l); o.value = id; sp.appendChild(o); }); sp.value = secOf(it);
+        sp.addEventListener('click', e => e.stopPropagation());
+        sp.addEventListener('change', () => { setItemSec(it, sp.value); saveShop(); saveMem(); renderShopping(); });
+        const ai = el('input', 'aisle-in'); ai.type = 'text'; ai.maxLength = 20; ai.placeholder = 'Aisle'; ai.value = itemAisle(it); ai.setAttribute('aria-label', 'Aisle for ' + it.name + ' at ' + storeName(curStore(), stores.indexOf(curStore())));
+        ai.addEventListener('click', e => e.stopPropagation());
+        ai.addEventListener('change', () => { setItemAisle(it, ai.value); saveMem(); renderShopping(); });
+        pr.appendChild(sp); pr.appendChild(ai); tx.appendChild(pr);
+      }
       lab.appendChild(cb); lab.appendChild(tx); li.appendChild(lab);
       if (!it.manual) {
         const hv = el('button', 'week-x'); hv.type = 'button'; hv.title = 'I already have this'; hv.setAttribute('aria-label', 'I already have ' + it.name + ' (move to Have)'); hv.appendChild(svgUse('i-check'));
@@ -2247,13 +2367,67 @@
       }
       const x = el('button', 'week-x'); x.type = 'button'; x.title = 'Remove from the list'; x.setAttribute('aria-label', 'Remove ' + it.name + ' from the list'); x.appendChild(svgUse('i-x'));
       x.addEventListener('click', () => { shopItems = shopItems.filter(s => s !== it); saveShop(); renderShopping(); }); li.appendChild(x);
-      ul.appendChild(li);
-    });
-    card.appendChild(ul);
+      return li;
+    };
+    const sorted = buy.slice().sort((a, b) => (a.checked - b.checked) || cmp(a.name, b.name));
+    if (shopGroup) {
+      shopGroups(sorted).forEach(g => {
+        const h = el('h3', 'shop-sec'); h.appendChild(el('span', null, g.label)); if (g.aisle) h.appendChild(el('span', 'aisle-tag', g.aisle)); h.appendChild(el('span', 'sec-n', String(g.items.length)));
+        card.appendChild(h); const ul = el('ul', 'shop-list'); g.items.forEach(it => ul.appendChild(rowFor(it))); card.appendChild(ul);
+      });
+    } else { const ul = el('ul', 'shop-list'); sorted.forEach(it => ul.appendChild(rowFor(it))); card.appendChild(ul); }
     const acts = el('div', 'shop-acts');
     if (done) acts.appendChild(confirmBtn('Remove checked items', 'Tap again to remove', () => { shopItems = shopItems.filter(i => isOwned(i) || !i.checked); saveShop(); renderShopping(); }));
     acts.appendChild(confirmBtn('Clear list', 'Tap again to clear', () => { shopItems = shopItems.filter(isOwned); saveShop(); renderShopping(); }));
     card.appendChild(acts); body.appendChild(card);
+  }
+
+  /* ---- Stores: add several stores, each with its own walking order and aisles ---- */
+  function openStoreDlg() {
+    const old = document.getElementById('storeDlg'); if (old) old.remove();
+    const ov = document.createElement('div'); ov.className = 'gm-overlay'; ov.id = 'storeDlg';
+    const box = el('div', 'gm-box store-box'); box.setAttribute('role', 'dialog'); box.setAttribute('aria-modal', 'true'); box.setAttribute('aria-labelledby', 'stTitle');
+    const close = () => { document.removeEventListener('keydown', onKey); ov.remove(); };
+    const onKey = e => { if (e.key === 'Escape') close(); };
+    ov.addEventListener('click', e => { if (e.target === ov) close(); });
+    const h = el('h2', null, 'Stores & aisles'); h.id = 'stTitle'; box.appendChild(h);
+    box.appendChild(el('p', 'f-hint', 'Home Plate can’t look up a store’s real aisles, so set yours once. Put the sections in the order you walk through the store and add an aisle or area for each (like 5 or Back wall). Add as many stores as you like. You can also type an aisle for any single item right on your list, and Home Plate remembers it for next time.'));
+    const draft = stores.map(x => ({ id: x.id, name: x.name, order: x.order.slice(), aisle: Object.assign({}, x.aisle) }));
+    let cur = Math.max(0, draft.findIndex(x => x.id === curStore().id));
+    const top = el('div', 'store-top'), sel = el('select', 'store-sel'); sel.setAttribute('aria-label', 'Which store to edit'); top.appendChild(sel);
+    const add = el('button', 'btn-ghost sm', 'Add store'); add.type = 'button'; top.appendChild(add);
+    const delSlot = document.createElement('span'); top.appendChild(delSlot); box.appendChild(top);
+    const nm = el('input', 'store-name'); nm.type = 'text'; nm.maxLength = 40; nm.placeholder = 'Store name (like Kroger)'; nm.setAttribute('aria-label', 'Store name'); box.appendChild(nm);
+    nm.addEventListener('input', () => { draft[cur].name = nm.value; const o = sel.options[cur]; if (o) o.textContent = nm.value.trim() || 'Store ' + (cur + 1); });
+    const rows = el('div', 'store-rows'); box.appendChild(rows);
+    function draw() {
+      sel.textContent = ''; draft.forEach((x, i) => { const o = el('option', null, x.name.trim() || (draft.length > 1 ? 'Store ' + (i + 1) : 'My store')); o.value = String(i); sel.appendChild(o); }); sel.value = String(cur);
+      add.disabled = draft.length >= 8; nm.value = draft[cur].name;
+      delSlot.textContent = ''; if (draft.length > 1) delSlot.appendChild(confirmBtn('Delete', 'Tap again to delete', () => { draft.splice(cur, 1); cur = Math.max(0, cur - 1); draw(); }));
+      rows.textContent = ''; const d = draft[cur];
+      d.order.forEach((id, i) => {
+        const row = el('div', 'store-row'), inp = el('input'); inp.type = 'text'; inp.maxLength = 20; inp.placeholder = 'Aisle'; inp.value = d.aisle[id] || ''; inp.setAttribute('aria-label', 'Aisle for ' + SEC_LABEL[id]);
+        inp.addEventListener('input', () => { d.aisle[id] = inp.value; });
+        const mv = (txt, label, to) => { const b = el('button', 'store-mv', txt); b.type = 'button'; b.setAttribute('aria-label', label + ' ' + SEC_LABEL[id]); b.disabled = to < 0 || to >= d.order.length;
+          b.addEventListener('click', () => { d.order.splice(i, 1); d.order.splice(to, 0, id); draw(); }); return b; };
+        row.appendChild(el('span', 'store-nm', SEC_LABEL[id])); row.appendChild(inp); row.appendChild(mv('↑', 'Move up', i - 1)); row.appendChild(mv('↓', 'Move down', i + 1)); rows.appendChild(row);
+      });
+    }
+    sel.addEventListener('change', () => { cur = Number(sel.value) || 0; draw(); });
+    add.addEventListener('click', () => { if (draft.length >= 8) return; draft.push(cleanOneStore({})); cur = draft.length - 1; draw(); nm.focus(); });
+    draw();
+    const acts = el('div', 'gm-acts');
+    const save = el('button', 'btn-primary sm', 'Save'); save.type = 'button';
+    save.addEventListener('click', () => {
+      const keepId = draft[cur].id; stores = cleanStores(draft); activeStoreId = stores.some(x => x.id === keepId) ? keepId : stores[0].id;
+      Object.keys(shopMem.aisle).forEach(id => { if (!stores.some(x => x.id === id)) delete shopMem.aisle[id]; });
+      saveStores(); saveActive(); saveMem(); close(); renderShopping(); toast('Stores saved.');
+    });
+    const rs = el('button', 'btn-ghost', 'Reset this store'); rs.type = 'button';
+    rs.addEventListener('click', () => { const d = draft[cur]; d.order = SEC_IDS.slice(); d.aisle = {}; draw(); });
+    const cn = el('button', 'btn-ghost', 'Cancel'); cn.type = 'button'; cn.addEventListener('click', close);
+    acts.appendChild(save); acts.appendChild(cn); acts.appendChild(rs); box.appendChild(acts);
+    ov.appendChild(box); document.body.appendChild(ov); document.addEventListener('keydown', onKey);
   }
 
   /* ---- Export the shopping list: share, email, text, copy, print, or open just the list in its own window ---- */
@@ -2265,8 +2439,12 @@
   const shopDate = () => { try { return new Date().toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' }); } catch (e) { return ''; } };
   function shopText(o) {
     const { buy, have } = shopSections(o), L = ['Shopping List — ' + shopDate()];
-    const put = (it, mark) => { L.push(mark + ' ' + it.name); if (o.details) it.notes.forEach(nt => L.push('     ' + (nt.l ? nt.l + ' · ' : '') + nt.t)); };
-    if (buy.length) { L.push('', 'TO BUY (' + buy.length + ')'); buy.forEach(it => put(it, it.checked ? '☑' : '☐')); }
+    const put = (it, mark) => { const ia = aisleFmt(itemAisle(it)); L.push(mark + ' ' + it.name + (ia ? ' (' + ia + ')' : '')); if (o.details) it.notes.forEach(nt => L.push('     ' + (nt.l ? nt.l + ' · ' : '') + nt.t)); };
+    if (buy.length) {
+      L.push('', 'TO BUY (' + buy.length + ')');
+      if (o.group) shopGroups(buy).forEach(g => { L.push('', g.label.toUpperCase() + (g.aisle ? ' · ' + g.aisle : '')); g.items.forEach(it => put(it, it.checked ? '☑' : '☐')); });
+      else buy.forEach(it => put(it, it.checked ? '☑' : '☐'));
+    }
     if (have.length) { L.push('', 'ALREADY HAVE (' + have.length + ')'); have.forEach(it => put(it, '✓')); }
     if (!buy.length && !have.length) L.push('', '(Nothing on the list.)');
     L.push('', 'From Home Plate Recipe Book'); return L.join('\n');
@@ -2282,11 +2460,13 @@
   }
   function shopHtml(o, autoPrint) {
     const { buy, have } = shopSections(o), esc = x => String(x).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-    const sec = (title, arr, kind) => !arr.length ? '' : '<h2>' + title + ' (' + arr.length + ')</h2><ul>' + arr.map(it => '<li class="' + (it.checked && kind === 'buy' ? 'done' : '') + '"><span class="box">' + ((it.checked && kind === 'buy') || kind === 'have' ? '✓' : '') + '</span><div><b>' + esc(it.name) + '</b>' +
+    const rows = (arr, kind) => '<ul>' + arr.map(it => '<li class="' + (it.checked && kind === 'buy' ? 'done' : '') + '"><span class="box">' + ((it.checked && kind === 'buy') || kind === 'have' ? '✓' : '') + '</span><div><b>' + esc(it.name) + '</b>' + (aisleFmt(itemAisle(it)) ? ' <span class="ai">' + esc(aisleFmt(itemAisle(it))) + '</span>' : '') +
       (o.details ? it.notes.map(nt => '<small>' + esc((nt.l ? nt.l + ' · ' : '') + nt.t) + '</small>').join('') : '') + '</div></li>').join('') + '</ul>';
+    const sec = (title, arr, kind) => !arr.length ? '' : '<h2>' + title + ' (' + arr.length + ')</h2>' +
+      (kind === 'buy' && o.group ? shopGroups(arr).map(g => '<h3>' + esc(g.label) + (g.aisle ? ' · ' + esc(g.aisle) : '') + '</h3>' + rows(g.items, kind)).join('') : rows(arr, kind));
     return '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Shopping List</title><style>' +
       'body{font:18px/1.4 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;color:#111;max-width:640px;margin:0 auto;padding:24px 20px}h1{font-size:30px;margin:0}header p{margin:2px 0 0;color:#555}' +
-      'h2{font-size:15px;letter-spacing:.08em;text-transform:uppercase;color:#a23b34;margin:26px 0 6px;border-bottom:2px solid #ddd;padding-bottom:4px}ul{list-style:none;margin:0;padding:0}' +
+      'h2{font-size:15px;letter-spacing:.08em;text-transform:uppercase;color:#a23b34;margin:26px 0 6px;border-bottom:2px solid #ddd;padding-bottom:4px}ul{list-style:none;margin:0;padding:0}h3{font-size:16px;margin:18px 0 0;color:#17333f;break-after:avoid}.ai{font-size:13px;color:#fff;background:#17333f;border-radius:99px;padding:1px 9px;margin-left:6px;white-space:nowrap}' +
       'li{display:flex;gap:12px;padding:9px 0;border-bottom:1px solid #eee;break-inside:avoid}.box{flex:none;width:22px;height:22px;border:2px solid #333;border-radius:4px;text-align:center;line-height:18px;font-weight:700}' +
       'b{font-weight:600}small{display:block;color:#555;font-size:14px}li.done b{text-decoration:line-through;color:#777}button{margin-top:14px;font:inherit;padding:8px 18px;border-radius:999px;border:2px solid #333;background:#fff;cursor:pointer}footer{margin-top:28px;color:#777;font-size:13px}' +
       '@media print{button{display:none}body{padding:0;font-size:16px}}</style></head><body><header><h1>Shopping List</h1><p>' + esc(shopDate()) + ' · Home Plate Recipe Book</p><button onclick="window.print()">Print</button></header>' +
@@ -2301,7 +2481,7 @@
     const onKey = e => { if (e.key === 'Escape') close(); };
     ov.addEventListener('click', e => { if (e.target === ov) close(); });
     const h = el('h2', null, 'Share your shopping list'); h.id = 'sxTitle'; box.appendChild(h);
-    const o = { checked: false, have: false, details: true };
+    const o = { checked: false, have: false, details: true, group: shopGroup };
     const opt = (key, label, sub) => {
       const row = el('label', 'rookie-row'), cb = el('input'); cb.type = 'checkbox'; cb.checked = o[key]; const tx = el('span'); tx.appendChild(el('b', null, label)); if (sub) tx.appendChild(el('small', null, sub));
       row.appendChild(cb); row.appendChild(tx); cb.addEventListener('change', () => { o[key] = cb.checked; refresh(); }); return row;
@@ -2328,6 +2508,7 @@
       sm.href = 'sms:?&body=' + encodeURIComponent(fitLink(o));
     }
     box.appendChild(count);
+    box.appendChild(opt('group', 'Group by store section', 'Follows the order and aisles from Store layout.'));
     box.appendChild(opt('details', 'Show amounts and recipe names', 'Turn off for a short list of just item names.'));
     box.appendChild(opt('checked', 'Include checked-off items'));
     box.appendChild(opt('have', 'Include items I already have'));
@@ -3218,7 +3399,7 @@
         kitchenTools = Array.isArray(d.kitchenTools) ? d.kitchenTools : [];
         customCats = Array.isArray(d.customCategories) ? d.customCategories : [];
         pantryKeys = Array.isArray(d.pantry) ? d.pantry.filter(x => typeof x === 'string') : [];
-        myPacks = cleanPacks(d.packs); weekMeals = cleanWeek(d.week); shopItems = cleanShop(d.shop);
+        myPacks = cleanPacks(d.packs); weekMeals = cleanWeek(d.week); shopItems = cleanShop(d.shop); stores = cleanStores(d.stores, d.store); activeStoreId = cleanStr(d.activeStore, 30); shopMem = cleanMem(d.shopMemory);
         hiddenIds = Array.isArray(d.hiddenRecipes) ? d.hiddenRecipes.filter(x => typeof x === 'string') : [];
         if (hiddenIds.length) { const keep = RECIPES.filter(r => r.ownerId === u.uid || !hiddenIds.includes(r.id)); RECIPES.splice(0, RECIPES.length, ...keep); }
         blockedUids = Array.isArray(d.blocked) ? d.blocked.filter(x => typeof x === 'string') : [];
@@ -3226,7 +3407,7 @@
         if (!us.exists()) A.setDoc(A.doc(fbDb, 'users', u.uid), { displayName: u.displayName || '', createdAt: Date.now() }, { merge: true }).catch(() => {});
       } else {
         kitchenTools = readLS('hp_kitchen_tools', '[]'); customCats = loadCustom(); pantryKeys = readLS('hp_pantry', '[]');
-        myPacks = cleanPacks(readLS('hp_packs', '[]')); weekMeals = cleanWeek(readLS('hp_week', '[]')); shopItems = cleanShop(readLS('hp_shop', '[]'));
+        myPacks = cleanPacks(readLS('hp_packs', '[]')); weekMeals = cleanWeek(readLS('hp_week', '[]')); shopItems = cleanShop(readLS('hp_shop', '[]')); stores = cleanStores(readLS('hp_stores', '[]'), readLS('hp_store', 'null')); activeStoreId = readLS('hp_active_store', '""'); shopMem = cleanMem(readLS('hp_shopmem', '{}'));
         blockedUids = []; blockedNames = []; hiddenIds = [];
       }
     } catch (e) { console.error(e); }
@@ -3804,7 +3985,7 @@
   /* ===== Versioning / cache-busting =====
      Bump APP_VERSION on every upload. Running copies compare themselves to the
      live index.html (fetched with no-store) and reload once if it differs. */
-  const APP_VERSION = '2026-11-14.39';
+  const APP_VERSION = '2026-11-15.41';
   (function () {
     const label = document.getElementById('appVer');
     if (label) label.textContent = 'Home Plate v' + APP_VERSION;
